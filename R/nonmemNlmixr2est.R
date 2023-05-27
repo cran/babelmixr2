@@ -114,6 +114,11 @@
     "Log-likelihood" = as.numeric(.llik), check.names = FALSE
   )
   .env$method <- "nonmem"
+  .time <- get("time", .env$env)
+  .time <- .time[,!(names(.time) %in% c("optimize", "covariance"))]
+  assign("time",
+         cbind(.time, data.frame(NONMEM=.ui$nonmemRunTime)),
+         .env)
   nlmixr2est::nlmixrAddObjectiveFunctionDataFrame(env, .tmp, .env$ofvType)
   env
 }
@@ -291,9 +296,6 @@
 
 #' @export
 nlmixr2Est.nonmem <- function(env, ...) {
-  if (!requireNamespace("pmxTools", quietly = TRUE)) {
-    stop("nonmem translation requires 'pmxTools'", call.=FALSE)
-  }
   .ui <- env$ui
   rxode2::assertRxUiTransformNormal(.ui, " for the estimation routine 'nonmem'", .var.name=.ui$modelName)
   rxode2::assertRxUiRandomOnIdOnly(.ui, " for the estimation routine 'nonmem'", .var.name=.ui$modelName)

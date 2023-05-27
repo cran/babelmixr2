@@ -166,7 +166,7 @@ withr::with_tempdir({
             "",
             "$INPUT ID TIME EVID AMT DV CMT RXROW",
             "",
-            "$SUBROUTINES ADVAN13 TOL=6",
+            "$SUBROUTINES ADVAN13 TOL=6 ATOL=12 SSTOL=6 SSATOL=12",
             "",
             "$MODEL NCOMPARTMENTS=2",
             "     COMP(DEPOT, DEFDOSE) ; depot",
@@ -214,10 +214,10 @@ withr::with_tempdir({
             "$COVARIANCE",
             "",
             "$TABLE ID ETAS(1:LAST) OBJI FIRSTONLY ONEHEADER NOPRINT",
-            "    NOAPPEND FILE=one.cmt.eta",
+            "     FORMAT=s1PE17.9 NOAPPEND FILE=one.cmt.eta",
             "",
             "$TABLE ID TIME IPRED PRED RXROW ONEHEADER NOPRINT",
-            "    NOAPPEND FILE=one.cmt.pred",
+            "    FORMAT=s1PE17.9 NOAPPEND FILE=one.cmt.pred",
             ""
           ),
           collapse="\n"
