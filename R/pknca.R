@@ -2,17 +2,20 @@
 #'
 #' @details Parameters are estimated as follows:
 #'
-#' \itemize{
-#' \item{ka}{4 half-lives to Tmax but not higher than 3:  \code{log(2)/(tmax/4)}}
-#' \item{vc}{Inverse of dose-normalized Cmax}
-#' \item{cl}{Estimated as the median clearance}
-#' \item{vp,vp2}{2- and 4-fold the \code{vc}, respectively by default,
+#'
+#' - \code{ka} 4 half-lives to Tmax but not higher than 3:  \code{log(2)/(tmax/4)}
+#'
+#' - \code{vc} Inverse of dose-normalized Cmax
+#'
+#' - \code{cl} Estimated as the median clearance
+#'
+#' - \code{vp,vp2}2- and 4-fold the \code{vc}, respectively by default,
 #'   controlled by the \code{vpMult} and \code{vp2Mult} arguments to
-#'   \code{pkncaControl}}
-#' \item{q,q2}{0.5- and 0.25-fold the \code{cl}, respectively by default,
+#'   \code{pkncaControl}
+#'
+#' - \code{q,q2} 0.5- and 0.25-fold the \code{cl}, respectively by default,
 #'   controlled by the \code{qMult} and \code{q2Mult} arguments to
-#'   \code{pkncaControl}}
-#' }
+#'   \code{pkncaControl}
 #'
 #' The bounds for the parameter estimates are set to 10% of the first percentile
 #' and 10 times the 99th percentile.  (For ka, the lower bound is set to the
@@ -219,13 +222,15 @@ getDvLines <- function(modelfun, inModel = FALSE, dvAssign = NULL) {
 #' @noRd
 calcPknca <- function(env, pkncaUnits) {
   # Normalize column names
+  rxControl <- env$control[[1]]$rxControl
   control <- env$control[[1]]
   rawData <- env$data
+
   if (!is.null(control$ncaData)) {
     # as.data.frame() due to https://github.com/nlmixr2/nlmixr2est/pull/262
     rawData <- as.data.frame(control$ncaData)
   }
-  cleanData <- bblDatToPknca(model = env$ui, data = rawData)
+  cleanData <- bblDatToPknca(model = env$ui, data = rawData, rxControl=rxControl)
   cleanColNames <- getStandardColNames(cleanData$obs)
   oConcFormula <-
     stats::as.formula(sprintf(
@@ -393,6 +398,7 @@ ini_transform <- function(x, ..., envir = parent.frame()) {
 #' @param ncaResults Already computed NCA results (a PKNCAresults object) to
 #'   bypass automatic calculations.  At least the following parameters must be
 #'   calculated in the NCA: tmax, cmax.dn, cl.last
+#' @param rxControl Control options sent to `rxode2::rxControl()`
 #' @return A list of parameters
 #' @export
 pkncaControl <- function(concu = NA_character_, doseu = NA_character_, timeu = NA_character_,
@@ -403,7 +409,8 @@ pkncaControl <- function(concu = NA_character_, doseu = NA_character_, timeu = N
                          groups = character(),
                          sparse = FALSE,
                          ncaData = NULL,
-                         ncaResults = NULL) {
+                         ncaResults = NULL,
+                         rxControl=rxode2::rxControl()) {
   getValidNlmixrCtl.pknca(
     list(
       concu = concu,
@@ -418,7 +425,8 @@ pkncaControl <- function(concu = NA_character_, doseu = NA_character_, timeu = N
       groups = groups,
       sparse = sparse,
       ncaData = ncaData,
-      ncaResults = ncaResults
+      ncaResults = ncaResults,
+      rxControl=rxControl
     )
   )
 }

@@ -5,16 +5,30 @@
 \alias{as.nlmixr}
 \title{Convert an object to a nlmixr2 fit object}
 \usage{
-as.nlmixr2(x, ..., table = nlmixr2est::tableControl())
+as.nlmixr2(
+  x,
+  ...,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl()
+)
 
-as.nlmixr(x, ..., table = nlmixr2est::tableControl())
+as.nlmixr(
+  x,
+  ...,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl()
+)
 }
 \arguments{
 \item{x}{Object to convert}
 
 \item{...}{Other arguments}
 
-\item{table}{is the `nlmixr2est::tableControl()` options}
+\item{table}{is the \code{nlmixr2est::tableControl()} options}
+
+\item{rxControl}{is the \code{rxode2::rxControl()} options, which is
+generally needed for how \code{addl} doses are handled in the
+translation}
 }
 \value{
 nlmixr2 fit object
@@ -25,6 +39,7 @@ Convert an object to a nlmixr2 fit object
 \examples{
 
 \donttest{
+
 # First read in the model (but without residuals)
 mod <- nonmem2rx(system.file("mods/cpt/runODE032.ctl", package="nonmem2rx"),
                  determineError=FALSE, lst=".res", save=FALSE)
@@ -73,6 +88,7 @@ new <- as.nonmem2rx(mod2, mod)
 fit <- as.nlmixr2(new)
 
 print(fit)
+
 }
 }
 \author{

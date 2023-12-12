@@ -3,12 +3,17 @@ rxUiGet.nonmemOutputLst <- function(x, ...) {
   .ui <- x[[1]]
   .info <- rxode2::rxGetControl(.ui, ".lstInfo", NULL)
   if (!is.null(.info)) return(.info)
+  .f <-  .ui$file
   .exportPath <- rxUiGet.nonmemExportPath(x, ...)
-  .lst <- rxUiGet.nonmemLst(x, ...)
-  if (!file.exists(file.path(.exportPath, .lst))) return(NULL)
-  .info <- withr::with_dir(.exportPath, {
-    nonmem2rx::nminfo(.lst)
-  })
+  if (!is.null(.f)) {
+    .info <- nonmem2rx::nminfo(.f)
+  } else {
+    .lst <- rxUiGet.nonmemLst(x, ...)
+    if (!file.exists(file.path(.exportPath, .lst))) return(NULL)
+    .info <- withr::with_dir(.exportPath, {
+      nonmem2rx::nminfo(.lst)
+    })
+  }
   rxode2::rxAssignControlValue(.ui, ".lstInfo", .info)
   .info
 }
@@ -218,7 +223,9 @@ rxUiGet.nonmemParHistory <- function(x, ...) {
   names(.ret) <- .d
   .ret <- .ret[.ret$iter > 0, names(.ret) != "_sigma"]
   .n <- c("iter", .ui$iniDf$name, "objf")
-  .ret[, .n]
+  .ret <- .ret[, .n]
+  .ret$type <- "Unscaled"
+  .ret
 }
 
 #' @export

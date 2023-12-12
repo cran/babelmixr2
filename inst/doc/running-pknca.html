@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Obtain initial estimates and unit conversions with PKNCA</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Obtain initial estimates and unit conversions with PKNCA</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Initial estimates for a compartmental population PK model can be obtained using <code>babelmixr2</code> with the <code>&quot;pknca&quot;</code> estimation method. Also, the central compartment scaling factor can be auto-generated based on units for dosing, concentration measurement, desired volume of distribution units, and time.</p>
+<p>You do not need to perform NCA analysis by hand; the <code>&quot;pknca&quot;</code> estimation method will perform NCA analysis using the <a href="https://billdenney.github.io/pknca/">PKNCA</a> package automatically.</p>
+<p>The methods used for converting NCA calculations to parameter estimates are described in the help for <code>nlmixr2Est.pknca()</code>.</p>
+</div>
+<div id="initial-example" class="section level2">
+<h2>Initial example</h2>
+<p>Initial model setup is the same as for any other <code>nlmixr2</code> model. You must load the <code>babelmixr2</code> library so that the <code>nlmixr()</code> function recognizes <code>est = &quot;pknca&quot;</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">library</span>(babelmixr2)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>one.compartment &lt;-<span class="st"> </span><span class="cf">function</span>() {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>  <span class="kw">ini</span>({</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>    tka &lt;-<span class="st"> </span><span class="kw">log</span>(<span class="fl">1.57</span>); <span class="kw">label</span>(<span class="st">&quot;Ka (1/hr)&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>    tcl &lt;-<span class="st"> </span><span class="kw">log</span>(<span class="fl">2.72</span>); <span class="kw">label</span>(<span class="st">&quot;Cl (L/hr)&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    tv &lt;-<span class="st"> </span><span class="kw">log</span>(<span class="fl">31.5</span>); <span class="kw">label</span>(<span class="st">&quot;V (L)&quot;</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>    eta.ka <span class="op">~</span><span class="st"> </span><span class="fl">0.6</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    eta.cl <span class="op">~</span><span class="st"> </span><span class="fl">0.3</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>    eta.v <span class="op">~</span><span class="st"> </span><span class="fl">0.1</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>    add.sd &lt;-<span class="st"> </span><span class="fl">0.7</span>; <span class="kw">label</span>(<span class="st">&quot;additive residual error (mg/L)&quot;</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  })</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>  <span class="co"># and a model block with the error specification and model specification</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  <span class="kw">model</span>({</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>    ka &lt;-<span class="st"> </span><span class="kw">exp</span>(tka <span class="op">+</span><span class="st"> </span>eta.ka)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>    cl &lt;-<span class="st"> </span><span class="kw">exp</span>(tcl <span class="op">+</span><span class="st"> </span>eta.cl)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>    vc &lt;-<span class="st"> </span><span class="kw">exp</span>(tv <span class="op">+</span><span class="st"> </span>eta.v)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>    d<span class="op">/</span><span class="kw">dt</span>(depot) &lt;-<span class="st"> </span><span class="op">-</span>ka <span class="op">*</span><span class="st"> </span>depot</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>    d<span class="op">/</span><span class="kw">dt</span>(center) &lt;-<span class="st"> </span>ka <span class="op">*</span><span class="st"> </span>depot <span class="op">-</span><span class="st"> </span>cl <span class="op">/</span><span class="st"> </span>vc <span class="op">*</span><span class="st"> </span>center</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>    cp &lt;-<span class="st"> </span>center <span class="op">/</span><span class="st"> </span>vc</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a>    cp <span class="op">~</span><span class="st"> </span><span class="kw">add</span>(add.sd)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>  })</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>}</span></code></pre></div>
+<p>To use PKNCA to get initial estimates, use <code>est = &quot;pknca&quot;</code> instead of one of the other <code>nlmixr2</code> estimation methods.</p>
+<p>For unit conversions, provide the units to the <code>control = pkncaControl()</code> argument. Unit conversions are only supported when the units can be automatically converted; mass/volume can be converted to any other mass/volume ratio, but mass to molar or molar to mass cannot because there is not a single mass-to-molar conversion factor.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>prepared &lt;-</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="st">  </span><span class="kw">nlmixr2</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    one.compartment,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    <span class="dt">data =</span> theo_sd,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="dt">est =</span> <span class="st">&quot;pknca&quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>    <span class="dt">control =</span> <span class="kw">pkncaControl</span>(<span class="dt">concu =</span> <span class="st">&quot;ng/mL&quot;</span>, <span class="dt">doseu =</span> <span class="st">&quot;mg&quot;</span>, <span class="dt">timeu =</span> <span class="st">&quot;hr&quot;</span>, <span class="dt">volumeu =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  )</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="co">#&gt; Loading required namespace: testthat</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (0.89314878960486) and upper/lower bound (-3.50655789731998 to 3.72508541597241) of `tka`</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="co">#&gt; → significant model change detected</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="co">#&gt; → removed from model: &#39;$getSplitModel&#39;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (8.41044546236311) and upper/lower bound (5.51439905878865 to 10.899462850803) of `tcl`</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (10.5377244826318) and upper/lower bound (7.94567233496473 to 13.1050053785005) of `tv`</span></span></code></pre></div>
+<p>Now, you have the prepared model with updated initial estimates and the NCA results embedded. You can see the new model and the PKNCA estimates by looking at the <code>prepared$ui</code> (the model as interpreted by rxode2) and <code>prepared$nca</code> (the PKNCAresults object).</p>
+<p>Note that in the new model, the fixed effect initial estimates are changed from their original values. The residual error and between-subject variability are unchanged.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>prepared<span class="op">$</span>ui</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="co">#&gt;  ── rxode2-based free-form 2-cmt ODE model ────────────────────────────────────── </span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="co">#&gt;  ── Initalization: ──  </span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="co">#&gt; Fixed Effects ($theta): </span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="co">#&gt;        tka        tcl         tv     add.sd </span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="co">#&gt;  0.8931488  8.4104455 10.5377245  0.7000000 </span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a><span class="co">#&gt; Omega ($omega): </span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a><span class="co">#&gt;        eta.ka eta.cl eta.v</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a><span class="co">#&gt; eta.ka    0.6    0.0   0.0</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a><span class="co">#&gt; eta.cl    0.0    0.3   0.0</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a><span class="co">#&gt; eta.v     0.0    0.0   0.1</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a><span class="co">#&gt; States ($state or $stateDf): </span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a><span class="co">#&gt;   Compartment Number Compartment Name</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a><span class="co">#&gt; 1                  1            depot</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a><span class="co">#&gt; 2                  2           center</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a><span class="co">#&gt;  ── μ-referencing ($muRefTable): ──  </span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a><span class="co">#&gt;   theta    eta level</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a><span class="co">#&gt; 1   tka eta.ka    id</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a><span class="co">#&gt; 2   tcl eta.cl    id</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a><span class="co">#&gt; 3    tv  eta.v    id</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a><span class="co">#&gt;  ── Model (Normalized Syntax): ── </span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a><span class="co">#&gt; function() {</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a><span class="co">#&gt;     ini({</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a><span class="co">#&gt;         tka &lt;- c(-3.50655789731998, 0.89314878960486, 3.72508541597241)</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Ka (1/hr)&quot;)</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a><span class="co">#&gt;         tcl &lt;- c(5.51439905878865, 8.41044546236311, 10.899462850803)</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Cl (L/hr)&quot;)</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a><span class="co">#&gt;         tv &lt;- c(7.94567233496473, 10.5377244826318, 13.1050053785005)</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;V (L)&quot;)</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true"></a><span class="co">#&gt;         add.sd &lt;- c(0, 0.7)</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;additive residual error (mg/L)&quot;)</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true"></a><span class="co">#&gt;         eta.ka ~ 0.6</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true"></a><span class="co">#&gt;         eta.cl ~ 0.3</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true"></a><span class="co">#&gt;         eta.v ~ 0.1</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true"></a><span class="co">#&gt;     model({</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true"></a><span class="co">#&gt;         ka &lt;- exp(tka + eta.ka)</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true"></a><span class="co">#&gt;         cl &lt;- exp(tcl + eta.cl)</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true"></a><span class="co">#&gt;         vc &lt;- exp(tv + eta.v)</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true"></a><span class="co">#&gt;         d/dt(depot) &lt;- -ka * depot</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true"></a><span class="co">#&gt;         d/dt(center) &lt;- ka * depot - cl/vc * center</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true"></a><span class="co">#&gt;         cp &lt;- 1000 * center/vc</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true"></a><span class="co">#&gt;         cp ~ add(add.sd)</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true"></a><span class="co">#&gt; }</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true"></a></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true"></a>knitr<span class="op">::</span><span class="kw">knit_print</span>(</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true"></a>  <span class="kw">summary</span>(prepared<span class="op">$</span>nca)</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true"></a>)</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true"></a><span class="co">#&gt;  Interval Start Interval End  N AUClast (hr*ng/mL) Cmax (ng/mL)</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true"></a><span class="co">#&gt;               0           24 12        74.6 [24.3]            .</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true"></a><span class="co">#&gt;               0          Inf 12                  .  8.65 [17.0]</span></span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true"></a><span class="co">#&gt;           Tmax (hr) CL (based on AUClast) (mg/(hr*ng/mL))</span></span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true"></a><span class="co">#&gt;                   .                           4.22 [23.0]</span></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true"></a><span class="co">#&gt;  1.14 [0.630, 3.55]                                     .</span></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true"></a><span class="co">#&gt;  Vss (based on AUClast) (mg/(ng/mL)) Half-life (hr) AUCinf,obs (hr*ng/mL)</span></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true"></a><span class="co">#&gt;                          25.0 [18.5]              .                     .</span></span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true"></a><span class="co">#&gt;                                    .    8.18 [2.12]            115 [28.4]</span></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true"></a><span class="co">#&gt;  Cmax (dose-normalized) ((ng/mL)/mg)</span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true"></a><span class="co">#&gt;                                    .</span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true"></a><span class="co">#&gt;                        0.0274 [18.1]</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true"></a><span class="co">#&gt; Caption: AUClast, Cmax, CL (based on AUClast), Vss (based on AUClast), AUCinf,obs, Cmax (dose-normalized): geometric mean and geometric coefficient of variation; Tmax: median and range; Half-life: arithmetic mean and standard deviation</span></span></code></pre></div>
+<p>From the updated model, you can perform estimation on the new model object, as with any other model that has been created for <code>nlmixr2</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>fit &lt;-<span class="st"> </span><span class="kw">nlmixr</span>(prepared, <span class="dt">data =</span> theo_sd, <span class="dt">est =</span> <span class="st">&quot;focei&quot;</span>, <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">print =</span> <span class="dv">0</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="co">#&gt; → loading into symengine environment...</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="co">#&gt; → pruning branches (`if`/`else`) of full model...</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="co">#&gt; ✔ done</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="co">#&gt; → calculate jacobian</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="co">#&gt; → calculate sensitivities</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="co">#&gt; → calculate ∂(f)/∂(η)</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a><span class="co">#&gt; → calculate ∂(R²)/∂(η)</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a><span class="co">#&gt; → finding duplicate expressions in inner model...</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a><span class="co">#&gt; → optimizing duplicate expressions in inner model...</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a><span class="co">#&gt; → finding duplicate expressions in EBE model...</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a><span class="co">#&gt; → optimizing duplicate expressions in EBE model...</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true"></a><span class="co">#&gt; → compiling inner model...</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true"></a><span class="co">#&gt; using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true"></a><span class="co">#&gt; ✔ done</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true"></a><span class="co">#&gt; → finding duplicate expressions in FD model...</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true"></a><span class="co">#&gt; → optimizing duplicate expressions in FD model...</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true"></a><span class="co">#&gt; → compiling EBE model...</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true"></a><span class="co">#&gt; using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true"></a><span class="co">#&gt; ✔ done</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true"></a><span class="co">#&gt; → compiling events FD model...</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true"></a><span class="co">#&gt; using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true"></a><span class="co">#&gt; ✔ done</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true"></a><span class="co">#&gt; rxode2 2.1.1 using 8 threads (see ?getRxThreads)</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true"></a><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true"></a><span class="co">#&gt; calculating covariance matrix</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true"></a><span class="co">#&gt; done</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true"></a><span class="co">#&gt; → Calculating residuals/tables</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true"></a><span class="co">#&gt; ✔ done</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true"></a><span class="co">#&gt; → compress origData in nlmixr2 object, save 5952</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true"></a><span class="co">#&gt; → compress parHistData in nlmixr2 object, save 5672</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true"></a></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true"></a>fit</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true"></a><span class="co">#&gt; ── nlmixr² FOCEi (outer: nlminb) ──</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true"></a><span class="co">#&gt;           OBJF      AIC      BIC Log-likelihood Condition#(Cov) Condition#(Cor)</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true"></a><span class="co">#&gt; FOCEi 117.2304 373.8302 394.0098      -179.9151        170.5271        9.700921</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true"></a><span class="co">#&gt; ── Time (sec fit$time): ──</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true"></a><span class="co">#&gt;            setup optimize covariance table compress    other</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true"></a><span class="co">#&gt; elapsed 0.020023 0.370917   0.370918 0.025    0.008 3.634142</span></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true"></a><span class="co">#&gt; ── Population Parameters (fit$parFixed or fit$parFixedDf): ──</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true"></a><span class="co">#&gt;                             Parameter  Est.     SE  %RSE</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true"></a><span class="co">#&gt; tka                         Ka (1/hr) 0.473   0.22  46.6</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true"></a><span class="co">#&gt; tcl                         Cl (L/hr)  7.91 0.0655 0.827</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true"></a><span class="co">#&gt; tv                              V (L)  10.4 0.0307 0.296</span></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true"></a><span class="co">#&gt; add.sd additive residual error (mg/L) 0.694             </span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true"></a><span class="co">#&gt;              Back-transformed(95%CI) BSV(CV%) Shrink(SD)%</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true"></a><span class="co">#&gt; tka                 1.6 (1.04, 2.47)     69.7     0.805% </span></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true"></a><span class="co">#&gt; tcl     2.73e+03 (2.4e+03, 3.11e+03)     27.2      7.47% </span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true"></a><span class="co">#&gt; tv     3.19e+04 (3.01e+04, 3.39e+04)     16.6      18.5% </span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true"></a><span class="co">#&gt; add.sd                         0.694                     </span></span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true"></a><span class="co">#&gt;  </span></span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true"></a><span class="co">#&gt;   Covariance Type (fit$covMethod): r,s</span></span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true"></a><span class="co">#&gt;   No correlations in between subject variability (BSV) matrix</span></span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true"></a><span class="co">#&gt;   Full BSV covariance (fit$omega) or correlation (fit$omegaR; diagonals=SDs) </span></span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true"></a><span class="co">#&gt;   Distribution stats (mean/skewness/kurtosis/p-value) available in fit$shrink </span></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true"></a><span class="co">#&gt;   Information about run found (fit$runInfo):</span></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true"></a><span class="co">#&gt;    • gradient problems with initial estimate and covariance; see $scaleInfo </span></span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true"></a><span class="co">#&gt;    • last objective function was not at minimum, possible problems in optimization </span></span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true"></a><span class="co">#&gt;    • ETAs were reset to zero during optimization; (Can control by foceiControl(resetEtaP=.)) </span></span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true"></a><span class="co">#&gt;    • initial ETAs were nudged; (can control by foceiControl(etaNudge=., etaNudge2=)) </span></span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true"></a><span class="co">#&gt;   Censoring (fit$censInformation): No censoring</span></span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true"></a><span class="co">#&gt;   Minimization message (fit$message):  </span></span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true"></a><span class="co">#&gt;     false convergence (8) </span></span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true"></a><span class="co">#&gt;   In an ODE system, false convergence may mean &quot;useless&quot; evaluations were performed.</span></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true"></a><span class="co">#&gt;   See https://tinyurl.com/yyrrwkce</span></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true"></a><span class="co">#&gt;   It could also mean the convergence is poor, check results before accepting fit</span></span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true"></a><span class="co">#&gt;   You may also try a good derivative free optimization:</span></span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true"></a><span class="co">#&gt;     nlmixr2(...,control=list(outerOpt=&quot;bobyqa&quot;))</span></span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true"></a><span class="co">#&gt; ── Fit Data (object fit is a modified tibble): ──</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 132 × 22</span></span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true"></a><span class="co">#&gt;   ID     TIME    DV  PRED    RES   WRES IPRED   IRES  IWRES CPRED   CRES  CWRES</span></span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true"></a><span class="co">#&gt;   &lt;fct&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true"></a><span class="co">#&gt; 1 1      0     0.74  0     0.74   1.07   0     0.74   1.07   0     0.74   1.07 </span></span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true"></a><span class="co">#&gt; 2 1      0.25  2.84  3.27 -0.432 -0.229  3.84 -1.00  -1.45   3.23 -0.389 -0.181</span></span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true"></a><span class="co">#&gt; 3 1      0.57  6.57  5.84  0.733  0.291  6.79 -0.217 -0.312  5.78  0.791  0.281</span></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true"></a><span class="co">#&gt; # ℹ 129 more rows</span></span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true"></a><span class="co">#&gt; # ℹ 10 more variables: eta.ka &lt;dbl&gt;, eta.cl &lt;dbl&gt;, eta.v &lt;dbl&gt;, depot &lt;dbl&gt;,</span></span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true"></a><span class="co">#&gt; #   center &lt;dbl&gt;, ka &lt;dbl&gt;, cl &lt;dbl&gt;, vc &lt;dbl&gt;, tad &lt;dbl&gt;, dosenum &lt;dbl&gt;</span></span></code></pre></div>
+</div>
+<div id="give-pknca-a-different-dataset-or-a-completed-nca-analysis" class="section level2">
+<h2>Give PKNCA a different dataset or a completed NCA analysis</h2>
+<p>To get the initial estimate, <code>babelmixr2</code> automatically converts your modeling dataset to the format the is needed for PKNCA, and the NCA is automatically performed using all the data.</p>
+<p>In some cases (e.g. studies with sparse data), NCA may not be feasible. In those cases, you can provide a different dataset to PKNCA compared to the full modeling dataset. Usually, the simplest method is to provide single-dose, dense-sampling, dose-ranging data (i.e. the single-ascending dose portion of the first-in-human study) to be estimated.</p>
+<p>To do this, give your data to PKNCA using the <code>ncaData</code> argument to <code>pkncaControl()</code> as follows:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="co"># Choose a subset of the full dataset for NCA</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>dNCA &lt;-<span class="st"> </span>theo_sd[theo_sd<span class="op">$</span>ID <span class="op">&lt;=</span><span class="st"> </span><span class="dv">6</span>, ]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>preparedNcaData &lt;-</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a><span class="st">  </span><span class="kw">nlmixr2</span>(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>    one.compartment,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>    <span class="dt">data =</span> theo_sd,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>    <span class="dt">est =</span> <span class="st">&quot;pknca&quot;</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    <span class="dt">control =</span> <span class="kw">pkncaControl</span>(<span class="dt">concu =</span> <span class="st">&quot;ng/mL&quot;</span>, <span class="dt">doseu =</span> <span class="st">&quot;mg&quot;</span>, <span class="dt">timeu =</span> <span class="st">&quot;hr&quot;</span>, <span class="dt">volumeu =</span> <span class="st">&quot;L&quot;</span>, <span class="dt">ncaData =</span> dNCA)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>  )</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (0.929027077269762) and upper/lower bound (-3.50655789731998 to 3.32136703319919) of `tka`</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a><span class="co">#&gt; → significant model change detected</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a><span class="co">#&gt; → removed from model: &#39;$getSplitModel&#39;</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (8.3955404628088) and upper/lower bound (5.85241523541802 to 10.7637056987378) of `tcl`</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (10.5377244826318) and upper/lower bound (7.94370069836702 to 13.1024358787022) of `tv`</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>preparedNcaData<span class="op">$</span>ui</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a><span class="co">#&gt;  ── rxode2-based free-form 2-cmt ODE model ────────────────────────────────────── </span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a><span class="co">#&gt;  ── Initalization: ──  </span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a><span class="co">#&gt; Fixed Effects ($theta): </span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a><span class="co">#&gt;        tka        tcl         tv     add.sd </span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a><span class="co">#&gt;  0.9290271  8.3955405 10.5377245  0.7000000 </span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a><span class="co">#&gt; Omega ($omega): </span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a><span class="co">#&gt;        eta.ka eta.cl eta.v</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a><span class="co">#&gt; eta.ka    0.6    0.0   0.0</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a><span class="co">#&gt; eta.cl    0.0    0.3   0.0</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a><span class="co">#&gt; eta.v     0.0    0.0   0.1</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a><span class="co">#&gt; States ($state or $stateDf): </span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a><span class="co">#&gt;   Compartment Number Compartment Name</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a><span class="co">#&gt; 1                  1            depot</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a><span class="co">#&gt; 2                  2           center</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a><span class="co">#&gt;  ── μ-referencing ($muRefTable): ──  </span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a><span class="co">#&gt;   theta    eta level</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a><span class="co">#&gt; 1   tka eta.ka    id</span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a><span class="co">#&gt; 2   tcl eta.cl    id</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a><span class="co">#&gt; 3    tv  eta.v    id</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a><span class="co">#&gt;  ── Model (Normalized Syntax): ── </span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a><span class="co">#&gt; function() {</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true"></a><span class="co">#&gt;     ini({</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true"></a><span class="co">#&gt;         tka &lt;- c(-3.50655789731998, 0.929027077269762, 3.32136703319919)</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Ka (1/hr)&quot;)</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true"></a><span class="co">#&gt;         tcl &lt;- c(5.85241523541802, 8.3955404628088, 10.7637056987378)</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Cl (L/hr)&quot;)</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true"></a><span class="co">#&gt;         tv &lt;- c(7.94370069836702, 10.5377244826318, 13.1024358787022)</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;V (L)&quot;)</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true"></a><span class="co">#&gt;         add.sd &lt;- c(0, 0.7)</span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;additive residual error (mg/L)&quot;)</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true"></a><span class="co">#&gt;         eta.ka ~ 0.6</span></span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true"></a><span class="co">#&gt;         eta.cl ~ 0.3</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true"></a><span class="co">#&gt;         eta.v ~ 0.1</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true"></a><span class="co">#&gt;     model({</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true"></a><span class="co">#&gt;         ka &lt;- exp(tka + eta.ka)</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true"></a><span class="co">#&gt;         cl &lt;- exp(tcl + eta.cl)</span></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true"></a><span class="co">#&gt;         vc &lt;- exp(tv + eta.v)</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true"></a><span class="co">#&gt;         d/dt(depot) &lt;- -ka * depot</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true"></a><span class="co">#&gt;         d/dt(center) &lt;- ka * depot - cl/vc * center</span></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true"></a><span class="co">#&gt;         cp &lt;- 1000 * center/vc</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true"></a><span class="co">#&gt;         cp ~ add(add.sd)</span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true"></a><span class="co">#&gt; }</span></span></code></pre></div>
+<p>The initial estimates are now based on NCA calculated from the <code>dNCA</code> dataset rather than the full <code>theo_sd</code> dataset.</p>
+<p>If you already have NCA results calculated by PKNCA with the required parameters (“tmax”, “cmax.dn”, and “cllast”), you can provide those instead using the <code>pkncaControl(ncaResults)</code> argument.</p>
+</div>
+<div id="model-requirements" class="section level2">
+<h2>Model requirements</h2>
+<p>To update the initial estimates, the model must have parameters in the <code>model()</code> block with the names that are expected by <code>est = &quot;pknca&quot;</code>. The expected names are:</p>
+<ul>
+<li><code>ka</code></li>
+<li><code>vc</code></li>
+<li><code>cl</code></li>
+<li><code>vp</code></li>
+<li><code>vp2</code></li>
+<li><code>q</code></li>
+<li><code>q2</code></li>
+</ul>
+<p>Any of those parameter names that are found in the <code>model()</code> block will be automatically traced back to the initial conditions (<code>ini()</code> block), and the parameter values will be updated. If the parameter is estimated on the log scale, the updated parameter value will automatically be converted to the log scale.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

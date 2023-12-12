@@ -8,15 +8,45 @@
 \alias{bblDatToPknca}
 \title{Convert nlmixr2-compatible data to other formats (if possible)}
 \usage{
-bblDatToMonolix(model, data, table = nlmixr2est::tableControl(), env = NULL)
+bblDatToMonolix(
+  model,
+  data,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl(),
+  env = NULL
+)
 
-bblDatToNonmem(model, data, table = nlmixr2est::tableControl(), env = NULL)
+bblDatToNonmem(
+  model,
+  data,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl(),
+  env = NULL
+)
 
-bblDatToRxode(model, data, table = nlmixr2est::tableControl(), env = NULL)
+bblDatToRxode(
+  model,
+  data,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl(),
+  env = NULL
+)
 
-bblDatToMrgsolve(model, data, table = nlmixr2est::tableControl(), env = NULL)
+bblDatToMrgsolve(
+  model,
+  data,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl(),
+  env = NULL
+)
 
-bblDatToPknca(model, data, table = nlmixr2est::tableControl(), env = NULL)
+bblDatToPknca(
+  model,
+  data,
+  table = nlmixr2est::tableControl(),
+  rxControl = rxode2::rxControl(),
+  env = NULL
+)
 }
 \arguments{
 \item{model}{rxode2 model for conversion}
@@ -26,24 +56,28 @@ bblDatToPknca(model, data, table = nlmixr2est::tableControl(), env = NULL)
 \item{table}{is the table control; this is mostly to figure out if
 there are additional columns to keep.}
 
-\item{env}{When `NULL` (default) nothing is done.  When an
-environment, the function `nlmixr2est::.foceiPreProcessData(data,
-env, model)` is called on the provided environment.}
+\item{rxControl}{is the rxode2 control options; This is to figure
+out how to handle the addl dosing information.}
+
+\item{env}{When \code{NULL} (default) nothing is done.  When an
+environment, the function \code{nlmixr2est::.foceiPreProcessData(data, env, model, rxControl)} is called on the provided environment.}
 }
 \value{
-With the function `bblDatToMonolix()` return a list with:
- - Monolix compatible dataset ($monolix)
- - Monolix ADM information ($adm)
+With the function \code{bblDatToMonolix()} return a list with:
+\itemize{
+\item Monolix compatible dataset ($monolix)
+\item Monolix ADM information ($adm)
+}
 
-With the function `nlmixrDataToNonmem()` return a dataset that is
+With the function \code{nlmixrDataToNonmem()} return a dataset that is
 compatible with NONMEM.
 
-With the function `nlmixrDataToMrgsolve()` return a dataset that is
-compatible with `mrgsolve`.  Unlike NONMEM, it supports replacement
-events with `evid=8` (note with `rxode2` replacement `evid` is `5`).
+With the function \code{nlmixrDataToMrgsolve()} return a dataset that is
+compatible with \code{mrgsolve}.  Unlike NONMEM, it supports replacement
+events with \code{evid=8} (note with \code{rxode2} replacement \code{evid} is \code{5}).
 
-With the function `nlmixrDataToRxode()` this will normalize the
-dataset to use newer `evid` definitions that are closer to NONMEM
+With the function \code{nlmixrDataToRxode()} this will normalize the
+dataset to use newer \code{evid} definitions that are closer to NONMEM
 instead of any classic definitions that are used at a lower level
 }
 \description{

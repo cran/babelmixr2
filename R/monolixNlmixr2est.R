@@ -26,7 +26,7 @@
     .ret <- .ret[, !(names(.ret) %in% c("SS", "II"))]
   }
   if (length(ui$predDf$cond) == 1L) {
-    .ret <- .ret[, !(names(.ret) %in% c("YTYPE"))]
+    .ret <- .ret[, !(names(.ret) %in% "YTYPE")]
   }
   .n <- names(.ret)
   rxode2::rxAssignControlValue(ui, ".hasRate",
@@ -152,7 +152,7 @@
   .ret <- new.env(parent=emptyenv())
   .ret$table <- env$table
   .ret$monolixControl <- .control
-  .tmp  <- bblDatToMonolix(.ui, .data, table=env$table, env=.ret)
+  .tmp  <- bblDatToMonolix(.ui, .data, table=env$table, rxControl=.control$rxControl, env=.ret)
   .ret$monolixData <- .monolixFormatData(.tmp$monolix, .ui)
   .tmp <- .tmp$adm
   if (length(.tmp$adm) == 0) {
@@ -234,12 +234,13 @@
   if (file.exists(.qs)) {
     .minfo("load saved nlmixr2 object")
     .ret <- qs::qread(.qs)
-    if (!exists("parHist", .ret$env)) {
+    if (!exists("parHistData", .ret$env)) {
       .tmp <- .ret$ui$monolixParHistory
       if (is.null(.tmp)) {
-        .minfo("monolix parameter history needs expoted charts, please export charts")
+        .minfo("monolix parameter history needs exported charts, please export charts")
       } else {
-        assign("parHist", .tmp, .ret$env)
+        .tmp$type <- "Unscaled"
+        assign("parHistData", .tmp, .ret$env)
         .minfo("monolix parameter history integrated into fit object")
         qs::qsave(.ret, .qs)
       }
@@ -302,9 +303,10 @@
     .tmp <- .ret$ui$monolixParHistory
     assign("message", paste(.msg$message, collapse="\n    "), envir=.ret$env)
     if (is.null(.tmp)) {
-      .minfo("monolix parameter history needs expoted charts, please export charts")
+      .minfo("monolix parameter history needs exported charts, please export charts")
     } else {
-      assign("parHist", .tmp, .ret$env)
+      .tmp$type <- "Unscaled"
+      assign("parHistData", .tmp, .ret$env)
       .minfo("monolix parameter history integrated into fit object")
       qs::qsave(.ret, .qs)
     }
@@ -325,6 +327,7 @@
 }
 
 nlmixr2Est.monolix <- function(env, ...) {
+  .model <- nlmixr2est::.uiApplyMu2(env)
   .ui <- env$ui
   rxode2::assertRxUiMuRefOnly(.ui, " for the estimation routine 'monolix'", .var.name=.ui$modelName)
   .ui <- rxode2::rxUiDecompress(env$ui)
@@ -345,5 +348,5 @@ nlmixr2Est.monolix <- function(env, ...) {
       rm("control", envir=.ui)
     }
   }, add=TRUE)
-  .monolixFamilyFit(env, ...)
+  nlmixr2est::.uiFinalizeMu2(.monolixFamilyFit(env, ...), .model)
 }

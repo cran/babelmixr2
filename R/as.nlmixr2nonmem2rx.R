@@ -12,14 +12,14 @@ nmObjGetControl.nonmem2rx <- function(x, ...) {
   stop("cannot find nonmem2rx related control object", call.=FALSE)
 }
 
-
 .nonmem2rxToFoceiControl <- function(env, model, assign=FALSE) {
   .rxControl <- rxode2::rxControl(covsInterpolation="nocb",
                                   atol=model$atol,
                                   rtol=model$rtol,
                                   ssRtol=model$ssRtol,
                                   ssAtol=model$ssAtol,
-                                  method="lsoda")
+                                  method="lsoda",
+                                  safeZero=FALSE)
   .foceiControl <- nlmixr2est::foceiControl(rxControl=.rxControl,
                                             maxOuterIterations = 0L, maxInnerIterations = 0L,
                                             etaMat = env$etaMat,
@@ -31,14 +31,15 @@ nmObjGetControl.nonmem2rx <- function(x, ...) {
 }
 
 #' @export
-as.nlmixr2.nonmem2rx <- function(x, ..., table=nlmixr2est::tableControl()) {
+as.nlmixr2.nonmem2rx <- function(x, ..., table=nlmixr2est::tableControl(), rxControl=rxode2::rxControl()) {
   #need x$nonmemData
   # need x to have at least one endpoint
   # The environment needs:
   env <- new.env(parent=emptyenv())
+  x <- rxode2::rxUiDecompress(x)
   nlmixr2est::nlmixrWithTiming("as.nlmixr2", {
     .ui <- new.env(parent=emptyenv())
-    .oldUi <- rxode2::rxUiDecompress(x)
+    .oldUi <- x
     for (n in ls(envir=.oldUi, all.names=TRUE)) {
       assign(n, get(n, envir=.oldUi), envir=.ui)
     }
@@ -46,7 +47,7 @@ as.nlmixr2.nonmem2rx <- function(x, ..., table=nlmixr2est::tableControl()) {
     # - $table for table options -- already present
     env$table <- table
     env$origData <- x$nonmemData
-    nlmixr2est::.foceiPreProcessData(env$origData, env, .ui)
+    nlmixr2est::.foceiPreProcessData(env$origData, env, .ui, rxControl)
     # - $origData -- Original Data -- already present
     # - $dataSav -- Processed data from .foceiPreProcessData --already present
     # - $idLvl -- Level information for ID factor added -- already present
@@ -92,7 +93,7 @@ as.nlmixr2.nonmem2rx <- function(x, ..., table=nlmixr2est::tableControl()) {
     #env$ofvType
     env$ofvType <- .ui$nonmemObjfType
     # Add parameter history
-    env$parHist <- .ui$nonmemParHistory
+    env$parHistData <- .ui$nonmemParHistory
     env$nobs <- x$dfObs
     env$nobs2<- x$dfObs
     # Run before converting to nonmemControl
