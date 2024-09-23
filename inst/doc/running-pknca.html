@@ -396,12 +396,14 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="dt">est =</span> <span class="st">&quot;pknca&quot;</span>,</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>    <span class="dt">control =</span> <span class="kw">pkncaControl</span>(<span class="dt">concu =</span> <span class="st">&quot;ng/mL&quot;</span>, <span class="dt">doseu =</span> <span class="st">&quot;mg&quot;</span>, <span class="dt">timeu =</span> <span class="st">&quot;hr&quot;</span>, <span class="dt">volumeu =</span> <span class="st">&quot;L&quot;</span>)</span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  )</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="co">#&gt; Loading required namespace: testthat</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (0.89314878960486) and upper/lower bound (-3.50655789731998 to 3.72508541597241) of `tka`</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="co">#&gt; → significant model change detected</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="co">#&gt; → removed from model: &#39;$getSplitModel&#39;</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (8.41044546236311) and upper/lower bound (5.51439905878865 to 10.899462850803) of `tcl`</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (10.5377244826318) and upper/lower bound (7.94567233496473 to 13.1050053785005) of `tv`</span></span></code></pre></div>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="co">#&gt; ℹ parameter labels from comments are typically ignored in non-interactive mode</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="co">#&gt; ℹ Need to run with the source intact to parse comments</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="co">#&gt; Loading required namespace: testthat</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (0.89314878960486) and upper/lower bound (-3.50655789731998 to 3.72508541597241) of `tka`</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="co">#&gt; → significant model change detected</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="co">#&gt; → removed from model: &#39;$getSplitModel&#39;</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (8.41044546236311) and upper/lower bound (5.51439905878865 to 10.899462850803) of `tcl`</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (10.5377244826318) and upper/lower bound (7.94567233496473 to 13.1050053785005) of `tv`</span></span></code></pre></div>
 <p>Now, you have the prepared model with updated initial estimates and the NCA results embedded. You can see the new model and the PKNCA estimates by looking at the <code>prepared$ui</code> (the model as interpreted by rxode2) and <code>prepared$nca</code> (the PKNCAresults object).</p>
 <p>Note that in the new model, the fixed effect initial estimates are changed from their original values. The residual error and between-subject variability are unchanged.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>prepared<span class="op">$</span>ui</span>
@@ -469,7 +471,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb3-63"><a href="#cb3-63" aria-hidden="true"></a><span class="co">#&gt;                                    .</span></span>
 <span id="cb3-64"><a href="#cb3-64" aria-hidden="true"></a><span class="co">#&gt;                        0.0274 [18.1]</span></span>
 <span id="cb3-65"><a href="#cb3-65" aria-hidden="true"></a><span class="co">#&gt; </span></span>
-<span id="cb3-66"><a href="#cb3-66" aria-hidden="true"></a><span class="co">#&gt; Caption: AUClast, Cmax, CL (based on AUClast), Vss (based on AUClast), AUCinf,obs, Cmax (dose-normalized): geometric mean and geometric coefficient of variation; Tmax: median and range; Half-life: arithmetic mean and standard deviation</span></span></code></pre></div>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true"></a><span class="co">#&gt; Caption: AUClast, Cmax, CL (based on AUClast), Vss (based on AUClast), AUCinf,obs, Cmax (dose-normalized): geometric mean and geometric coefficient of variation; Tmax: median and range; Half-life: arithmetic mean and standard deviation; N: number of subjects</span></span></code></pre></div>
 <p>From the updated model, you can perform estimation on the new model object, as with any other model that has been created for <code>nlmixr2</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>fit &lt;-<span class="st"> </span><span class="kw">nlmixr</span>(prepared, <span class="dt">data =</span> theo_sd, <span class="dt">est =</span> <span class="st">&quot;focei&quot;</span>, <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">print =</span> <span class="dv">0</span>))</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="co">#&gt; → loading into symengine environment...</span></span>
@@ -504,7 +506,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-31"><a href="#cb4-31" aria-hidden="true"></a><span class="co">#&gt; → compiling events FD model...</span></span>
 <span id="cb4-32"><a href="#cb4-32" aria-hidden="true"></a><span class="co">#&gt; using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’</span></span>
 <span id="cb4-33"><a href="#cb4-33" aria-hidden="true"></a><span class="co">#&gt; ✔ done</span></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true"></a><span class="co">#&gt; rxode2 2.1.1 using 8 threads (see ?getRxThreads)</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true"></a><span class="co">#&gt; rxode2 3.0.1 using 8 threads (see ?getRxThreads)</span></span>
 <span id="cb4-35"><a href="#cb4-35" aria-hidden="true"></a><span class="co">#&gt;   no cache: create with `rxCreateCache()`</span></span>
 <span id="cb4-36"><a href="#cb4-36" aria-hidden="true"></a><span class="co">#&gt; calculating covariance matrix</span></span>
 <span id="cb4-37"><a href="#cb4-37" aria-hidden="true"></a><span class="co">#&gt; [====|====|====|====|====|====|====|====|====|====] 0:00:00 </span></span>
@@ -523,7 +525,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-50"><a href="#cb4-50" aria-hidden="true"></a><span class="co">#&gt; ── Time (sec fit$time): ──</span></span>
 <span id="cb4-51"><a href="#cb4-51" aria-hidden="true"></a><span class="co">#&gt; </span></span>
 <span id="cb4-52"><a href="#cb4-52" aria-hidden="true"></a><span class="co">#&gt;            setup optimize covariance table compress    other</span></span>
-<span id="cb4-53"><a href="#cb4-53" aria-hidden="true"></a><span class="co">#&gt; elapsed 0.020023 0.370917   0.370918 0.025    0.008 3.634142</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true"></a><span class="co">#&gt; elapsed 0.026947  0.42736   0.427362 0.062    0.008 4.205331</span></span>
 <span id="cb4-54"><a href="#cb4-54" aria-hidden="true"></a><span class="co">#&gt; </span></span>
 <span id="cb4-55"><a href="#cb4-55" aria-hidden="true"></a><span class="co">#&gt; ── Population Parameters (fit$parFixed or fit$parFixedDf): ──</span></span>
 <span id="cb4-56"><a href="#cb4-56" aria-hidden="true"></a><span class="co">#&gt; </span></span>
@@ -582,60 +584,62 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>    <span class="dt">est =</span> <span class="st">&quot;pknca&quot;</span>,</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    <span class="dt">control =</span> <span class="kw">pkncaControl</span>(<span class="dt">concu =</span> <span class="st">&quot;ng/mL&quot;</span>, <span class="dt">doseu =</span> <span class="st">&quot;mg&quot;</span>, <span class="dt">timeu =</span> <span class="st">&quot;hr&quot;</span>, <span class="dt">volumeu =</span> <span class="st">&quot;L&quot;</span>, <span class="dt">ncaData =</span> dNCA)</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>  )</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (0.929027077269762) and upper/lower bound (-3.50655789731998 to 3.32136703319919) of `tka`</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a><span class="co">#&gt; → significant model change detected</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a><span class="co">#&gt; → removed from model: &#39;$getSplitModel&#39;</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (8.3955404628088) and upper/lower bound (5.85241523541802 to 10.7637056987378) of `tcl`</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (10.5377244826318) and upper/lower bound (7.94370069836702 to 13.1024358787022) of `tv`</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>preparedNcaData<span class="op">$</span>ui</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a><span class="co">#&gt;  ── rxode2-based free-form 2-cmt ODE model ────────────────────────────────────── </span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a><span class="co">#&gt;  ── Initalization: ──  </span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a><span class="co">#&gt; Fixed Effects ($theta): </span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a><span class="co">#&gt;        tka        tcl         tv     add.sd </span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a><span class="co">#&gt;  0.9290271  8.3955405 10.5377245  0.7000000 </span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a><span class="co">#&gt; </span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a><span class="co">#&gt; Omega ($omega): </span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a><span class="co">#&gt;        eta.ka eta.cl eta.v</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a><span class="co">#&gt; eta.ka    0.6    0.0   0.0</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a><span class="co">#&gt; eta.cl    0.0    0.3   0.0</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a><span class="co">#&gt; eta.v     0.0    0.0   0.1</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a><span class="co">#&gt; </span></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a><span class="co">#&gt; States ($state or $stateDf): </span></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a><span class="co">#&gt;   Compartment Number Compartment Name</span></span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a><span class="co">#&gt; 1                  1            depot</span></span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a><span class="co">#&gt; 2                  2           center</span></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a><span class="co">#&gt;  ── μ-referencing ($muRefTable): ──  </span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a><span class="co">#&gt;   theta    eta level</span></span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a><span class="co">#&gt; 1   tka eta.ka    id</span></span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a><span class="co">#&gt; 2   tcl eta.cl    id</span></span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a><span class="co">#&gt; 3    tv  eta.v    id</span></span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a><span class="co">#&gt; </span></span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a><span class="co">#&gt;  ── Model (Normalized Syntax): ── </span></span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a><span class="co">#&gt; function() {</span></span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true"></a><span class="co">#&gt;     ini({</span></span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true"></a><span class="co">#&gt;         tka &lt;- c(-3.50655789731998, 0.929027077269762, 3.32136703319919)</span></span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Ka (1/hr)&quot;)</span></span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true"></a><span class="co">#&gt;         tcl &lt;- c(5.85241523541802, 8.3955404628088, 10.7637056987378)</span></span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Cl (L/hr)&quot;)</span></span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true"></a><span class="co">#&gt;         tv &lt;- c(7.94370069836702, 10.5377244826318, 13.1024358787022)</span></span>
-<span id="cb5-48"><a href="#cb5-48" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;V (L)&quot;)</span></span>
-<span id="cb5-49"><a href="#cb5-49" aria-hidden="true"></a><span class="co">#&gt;         add.sd &lt;- c(0, 0.7)</span></span>
-<span id="cb5-50"><a href="#cb5-50" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;additive residual error (mg/L)&quot;)</span></span>
-<span id="cb5-51"><a href="#cb5-51" aria-hidden="true"></a><span class="co">#&gt;         eta.ka ~ 0.6</span></span>
-<span id="cb5-52"><a href="#cb5-52" aria-hidden="true"></a><span class="co">#&gt;         eta.cl ~ 0.3</span></span>
-<span id="cb5-53"><a href="#cb5-53" aria-hidden="true"></a><span class="co">#&gt;         eta.v ~ 0.1</span></span>
-<span id="cb5-54"><a href="#cb5-54" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
-<span id="cb5-55"><a href="#cb5-55" aria-hidden="true"></a><span class="co">#&gt;     model({</span></span>
-<span id="cb5-56"><a href="#cb5-56" aria-hidden="true"></a><span class="co">#&gt;         ka &lt;- exp(tka + eta.ka)</span></span>
-<span id="cb5-57"><a href="#cb5-57" aria-hidden="true"></a><span class="co">#&gt;         cl &lt;- exp(tcl + eta.cl)</span></span>
-<span id="cb5-58"><a href="#cb5-58" aria-hidden="true"></a><span class="co">#&gt;         vc &lt;- exp(tv + eta.v)</span></span>
-<span id="cb5-59"><a href="#cb5-59" aria-hidden="true"></a><span class="co">#&gt;         d/dt(depot) &lt;- -ka * depot</span></span>
-<span id="cb5-60"><a href="#cb5-60" aria-hidden="true"></a><span class="co">#&gt;         d/dt(center) &lt;- ka * depot - cl/vc * center</span></span>
-<span id="cb5-61"><a href="#cb5-61" aria-hidden="true"></a><span class="co">#&gt;         cp &lt;- 1000 * center/vc</span></span>
-<span id="cb5-62"><a href="#cb5-62" aria-hidden="true"></a><span class="co">#&gt;         cp ~ add(add.sd)</span></span>
-<span id="cb5-63"><a href="#cb5-63" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
-<span id="cb5-64"><a href="#cb5-64" aria-hidden="true"></a><span class="co">#&gt; }</span></span></code></pre></div>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a><span class="co">#&gt; ℹ parameter labels from comments are typically ignored in non-interactive mode</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a><span class="co">#&gt; ℹ Need to run with the source intact to parse comments</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (0.929027077269762) and upper/lower bound (-3.50655789731998 to 3.32136703319919) of `tka`</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a><span class="co">#&gt; → significant model change detected</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a><span class="co">#&gt; → removed from model: &#39;$getSplitModel&#39;</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (8.3955404628088) and upper/lower bound (5.85241523541802 to 10.7637056987378) of `tcl`</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a><span class="co">#&gt; ℹ change initial estimate (10.5377244826318) and upper/lower bound (7.94370069836702 to 13.1024358787022) of `tv`</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>preparedNcaData<span class="op">$</span>ui</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a><span class="co">#&gt;  ── rxode2-based free-form 2-cmt ODE model ────────────────────────────────────── </span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a><span class="co">#&gt;  ── Initalization: ──  </span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a><span class="co">#&gt; Fixed Effects ($theta): </span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a><span class="co">#&gt;        tka        tcl         tv     add.sd </span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a><span class="co">#&gt;  0.9290271  8.3955405 10.5377245  0.7000000 </span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a><span class="co">#&gt; Omega ($omega): </span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a><span class="co">#&gt;        eta.ka eta.cl eta.v</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a><span class="co">#&gt; eta.ka    0.6    0.0   0.0</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a><span class="co">#&gt; eta.cl    0.0    0.3   0.0</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a><span class="co">#&gt; eta.v     0.0    0.0   0.1</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true"></a><span class="co">#&gt; States ($state or $stateDf): </span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true"></a><span class="co">#&gt;   Compartment Number Compartment Name</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true"></a><span class="co">#&gt; 1                  1            depot</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true"></a><span class="co">#&gt; 2                  2           center</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true"></a><span class="co">#&gt;  ── μ-referencing ($muRefTable): ──  </span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true"></a><span class="co">#&gt;   theta    eta level</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true"></a><span class="co">#&gt; 1   tka eta.ka    id</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true"></a><span class="co">#&gt; 2   tcl eta.cl    id</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true"></a><span class="co">#&gt; 3    tv  eta.v    id</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true"></a><span class="co">#&gt;  ── Model (Normalized Syntax): ── </span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true"></a><span class="co">#&gt; function() {</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true"></a><span class="co">#&gt;     ini({</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true"></a><span class="co">#&gt;         tka &lt;- c(-3.50655789731998, 0.929027077269762, 3.32136703319919)</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Ka (1/hr)&quot;)</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true"></a><span class="co">#&gt;         tcl &lt;- c(5.85241523541802, 8.3955404628088, 10.7637056987378)</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;Cl (L/hr)&quot;)</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true"></a><span class="co">#&gt;         tv &lt;- c(7.94370069836702, 10.5377244826318, 13.1024358787022)</span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;V (L)&quot;)</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true"></a><span class="co">#&gt;         add.sd &lt;- c(0, 0.7)</span></span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true"></a><span class="co">#&gt;         label(&quot;additive residual error (mg/L)&quot;)</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true"></a><span class="co">#&gt;         eta.ka ~ 0.6</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true"></a><span class="co">#&gt;         eta.cl ~ 0.3</span></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true"></a><span class="co">#&gt;         eta.v ~ 0.1</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true"></a><span class="co">#&gt;     model({</span></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true"></a><span class="co">#&gt;         ka &lt;- exp(tka + eta.ka)</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true"></a><span class="co">#&gt;         cl &lt;- exp(tcl + eta.cl)</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true"></a><span class="co">#&gt;         vc &lt;- exp(tv + eta.v)</span></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true"></a><span class="co">#&gt;         d/dt(depot) &lt;- -ka * depot</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true"></a><span class="co">#&gt;         d/dt(center) &lt;- ka * depot - cl/vc * center</span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true"></a><span class="co">#&gt;         cp &lt;- 1000 * center/vc</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true"></a><span class="co">#&gt;         cp ~ add(add.sd)</span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true"></a><span class="co">#&gt;     })</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true"></a><span class="co">#&gt; }</span></span></code></pre></div>
 <p>The initial estimates are now based on NCA calculated from the <code>dNCA</code> dataset rather than the full <code>theo_sd</code> dataset.</p>
 <p>If you already have NCA results calculated by PKNCA with the required parameters (“tmax”, “cmax.dn”, and “cllast”), you can provide those instead using the <code>pkncaControl(ncaResults)</code> argument.</p>
 </div>

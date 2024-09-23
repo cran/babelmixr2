@@ -31,6 +31,7 @@ monolixControl(
   absolutePath = FALSE,
   modelName = NULL,
   muRefCovAlg = TRUE,
+  run = TRUE,
   ...
 )
 }
@@ -152,6 +153,8 @@ clear).  Otherwise use this character for outputs.}
 In general, these covariates should be more accurate since it
 changes the system to a linear compartment model.  Therefore, by default this is `TRUE`.}
 
+\item{run}{Should monolix be run and the results be imported to nlmixr2?  (Default is TRUE)}
+
 \item{...}{Ignored parameters}
 }
 \value{
@@ -178,6 +181,9 @@ will wait for the function to return before proceeding.
 
 If \code{runCommand} is \code{NA}, \code{nlmixr()} will stop after writing
 the model files and without starting Monolix.
+
+Note that you can get the translated monolix components from a
+parsed/compiled rxode2 ui object with \code{ui$monolixModel} and \code{ui$mlxtran}
 }
 \author{
 Matthew Fidler

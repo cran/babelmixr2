@@ -46,27 +46,33 @@ Otherwise you can always install from GitHub:
 
 Babelmixr2 can help you by:
 
-- Running your nlmixr2 model in a commercial nonlinear mixed effects
-  modeling tool like
-  [`NONMEM`](https://nlmixr2.github.io/babelmixr2/articles/running-nonmem.html)
-  or `Monolix`
+  - Running your nlmixr2 model in a commercial nonlinear mixed effects
+    modeling tool like
+    [`NONMEM`](https://nlmixr2.github.io/babelmixr2/articles/running-nonmem.html)
+    or `Monolix`
 
-- Convert your [`NONMEM` model to a nlmixr2
-  model](https://nlmixr2.github.io/nonmem2rx/articles/convert-nlmixr2.html)
-  (in conjunction with `nonmem2rx`)
+  - Convert your [`NONMEM` model to a nlmixr2
+    model](https://nlmixr2.github.io/nonmem2rx/articles/convert-nlmixr2.html)
+    (in conjunction with `nonmem2rx`)
 
-- Calculate scaling factors and automatically add initial conditions
-  based on non-compartmental analysis (using `PKNCA`)
+  - Convert you [`Monolix` model to a nlmixr2
+    model](https://nlmixr2.github.io/nonmem2rx/articles/convert-nlmixr2.html)
+    (in conjunction with `monolix2rx`)
+
+  - Calculate scaling factors and automatically add initial conditions
+    based on non-compartmental analysis (using `PKNCA`)
+
+  - Perform Optimal design using nlmixr2 as an interface to `PopED`
 
 ## Monolix Setup
 
 While not required, you can get/install the R ‘lixoftConnectors’ package
 in the ‘Monolix’ installation, as described at the following url
-<https://monolix.lixoft.com/monolix-api/lixoftconnectors_installation/>.
+<https://monolixsuite.slp-software.com/r-functions/2024R1/installation-and-initialization>.
 When ‘lixoftConnectors’ is available, R can run ‘Monolix’ directly
 instead of using a command line.
 
-## Example
+## PKNCA Example
 
 After installed, if you use the standard interface, you can obtain new
 initial estimates with PKNCA:
@@ -79,13 +85,20 @@ mod <-
   )
 ```
 
-or, you can convert to Monolix with
+## Monolix example
+
+With babelmixr2 loaded, you can use `nlmixr2` to convert a nlmixr2 model
+to Monolix, run with monolix, and import back to nlmixr2 with the
+following:
 
 ``` r
 mod <- nlmixr(nlmixrFun, nlmmixrData, est="monolix")
 ```
 
-or, you can convert to NONMEM with
+## NONMEM example
+
+With babelmixr2 loaded you can use `nlmixr2` to convert a nlmixr2 model
+to NONMEM, run NONMEM and import back to nlmixr2 with the following:
 
 ``` r
 mod <- nlmixr(nlmixrFun, nlmmixrData, est="nonmem")

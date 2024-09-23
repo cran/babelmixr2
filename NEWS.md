@@ -1,3 +1,22 @@
+# babelmixr2 0.1.4
+
+* Added experimental `PopED` integration
+
+* Removed dependence on `rxode2parse`
+
+* Imported `monolix2rx` from the `monolix2rx` package
+
+* Also allow conversion of a model imported from monolix to a
+  `nlmixr2` fit.
+
+# babelmixr2 0.1.3
+
+* Changed default NONMEM rounding protection to FALSE
+
+* Added a `run` option to the `monolixControl()` and `nonemControl()`
+  in case you only want to export the modeling files and not run the
+  models.
+
 # babelmixr2 0.1.2
 
 * Handle algebraic `mu` expressions
