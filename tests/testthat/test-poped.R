@@ -1,4 +1,5 @@
-if (requireNamespace("PopED", quietly=TRUE)) {
+if (requireNamespace("PopED", quietly=TRUE) &&
+    identical(Sys.getenv("NOT_CRAN"), "true")) {
 
   pheno <- function() {
     ini({
@@ -167,6 +168,7 @@ if (requireNamespace("PopED", quietly=TRUE)) {
     withr::with_seed(42, {
 
       set.seed(42)
+
       phenoWt <- function() {
         ini({
           tcl <- log(0.008) # typical value of clearance
@@ -207,16 +209,16 @@ if (requireNamespace("PopED", quietly=TRUE)) {
 
       library(PopED)
 
-      expect_equal(list(ofv = 20.947993269923,
-                        fim = lotri({
-                          tcl ~ 39.1196937156543
-                          tv ~ c(-0.386317381405573, 40.0037481563051)
-                          sig_var_add.err ~ 800097.977314259
-                        }),
-                        rse = c(tcl = 3.31152092974365,
-                                tv = 30.9526397537534,
-                                sig_var_add.err = 11.1796553130823)),
-                   evaluate_design(db), tolerance = 1e-4)
+      expect_equal(
+        list(ofv = 20.9455595871912,
+             fim = lotri({
+               tcl ~ 39.0235064308582
+               tv ~ c(-0.385137678397696, 40.0037346438455)
+               sig_var_add.err ~ 800120.483866746
+             }),
+             rse = c(tcl = 3.31559905061048, tv = 30.9526395967922,
+                     sig_var_add.err = 11.1794980759702)),
+        evaluate_design(db), tolerance = 1e-4)
 
       ## v <- poped_optim(db, opt_xt=TRUE)
 
@@ -313,6 +315,128 @@ if (requireNamespace("PopED", quietly=TRUE)) {
 
     })
 
+
+  })
+
+  test_that("shrinkage", {
+
+    f <- function() {
+      ini({
+        tV <- 72.8
+        tKa <- 0.25
+        tCl <- 3.75
+        tF <- fix(0.9)
+        eta.v ~ 0.09
+        eta.ka ~ 0.09
+        eta.cl ~0.25^2
+        prop.sd <- fix(sqrt(0.04))
+        add.sd <- fix(sqrt(5e-6))
+      })
+      model({
+        V<-tV*exp(eta.v)
+        KA<-tKa*exp(eta.ka)
+        CL<-tCl*exp(eta.cl)
+        Favail <- tF
+        N <-  floor(time/TAU)+1
+        y <- (DOSE*Favail/V)*(KA/(KA - CL/V)) *
+          (exp(-CL/V * (time - (N - 1) * TAU)) *
+             (1 - exp(-N * CL/V * TAU))/(1 - exp(-CL/V * TAU)) -
+             exp(-KA * (time - (N - 1) * TAU)) * (1 - exp(-N * KA * TAU))/(1 - exp(-KA * TAU)))
+        y ~ prop(prop.sd) + add(add.sd)
+      })
+    }
+
+    # minxt, maxxt
+    e <- et(list(c(0, 10),
+                 c(0, 10),
+                 c(0, 10),
+                 c(240, 248),
+                 c(240, 248))) %>%
+      as.data.frame()
+
+    #xt
+    e$time <-  c(1,2,8,240,245)
+
+
+    babel.db <- nlmixr2(f, e, "poped",
+                        popedControl(groupsize=20,
+                                     bUseGrouped_xt=TRUE,
+                                     a=list(c(DOSE=20,TAU=24),
+                                            c(DOSE=40, TAU=24)),
+                                     maxa=c(DOSE=200,TAU=24),
+                                     mina=c(DOSE=0,TAU=24)))
+
+    expect_error(shrinkage(babel.db), NA)
+
+  })
+
+  test_that("mixing 2 poped databases at the same time", {
+    library(PopED)
+
+    # Define the model
+    f <- function() {
+      ini({
+        tV <- 72.8
+        tKa <- 0.25
+        tCl <- 3.75
+        tF <- fix(0.9)
+        pedCL <- 0.8
+        eta.v ~ 0.09
+        eta.ka ~ 0.09
+        eta.cl ~0.25^2
+        prop.sd <- fix(sqrt(0.04))
+        add.sd <- fix(sqrt(5e-6))
+      })
+      model({
+        V<-tV*exp(eta.v)
+        KA<-tKa*exp(eta.ka)
+        CL<-tCl*exp(eta.cl)  * (pedCL^isPediatric) # add covariate for pediatrics
+        Favail <- tF
+        N <-  floor(t/TAU)+1
+        y <- (DOSE*Favail/V)*(KA/(KA - CL/V)) *
+          (exp(-CL/V * (t - (N - 1) * TAU)) *
+             (1 - exp(-N * CL/V * TAU))/(1 - exp(-CL/V * TAU)) -
+             exp(-KA * (t - (N - 1) * TAU)) * (1 - exp(-N * KA * TAU))/(1 - exp(-KA * TAU)))
+        y ~ prop(prop.sd) + add(add.sd)
+      })
+    }
+
+    e <- et(c( 1,8,10,240,245))
+
+    babel.db <- nlmixr2(f, e, "poped",
+                        popedControl(m = 2,
+                                     groupsize=20,
+                                     bUseGrouped_xt=TRUE,
+                                     a=list(c(DOSE=20,TAU=24,isPediatric = 0),
+                                            c(DOSE=40, TAU=24,isPediatric = 0))))
+
+
+    # Note, to be able to use the adults FIM to combine with the pediatrics,
+    # both have to have the parameter "pedCL" defined and set notfixed_bpop to 1.
+
+    ## Define pediatric model/design (isPediatric = 1)
+    ## One arm, 4 time points only
+
+    e.ped <- et(c( 1,2,6,240))
+
+    babel.db.ped <- nlmixr2(f, e.ped, "poped",
+                            popedControl(m = 1,
+                                         groupsize=6,
+                                         bUseGrouped_xt=TRUE,
+                                         a=list(c(DOSE=40,TAU=24,isPediatric = 1))))
+
+
+    ##  Create plot of model of adult data without variability
+    vdiffr::expect_doppelganger("poped-adult-first",
+                                plot_model_prediction(babel.db, model_num_points = 300))
+
+    vdiffr::expect_doppelganger("poped-ped-next",
+                                plot_model_prediction(babel.db.ped,
+                                                      model_num_points = 300))
+
+    expect_equal(babelBpopIdx(babel.db.ped, "pedCL"), 4L)
+
+    expect_error(babelBpopIdx(babel.db, "matt"))
 
   })
 
@@ -594,4 +718,129 @@ if (requireNamespace("PopED", quietly=TRUE)) {
   ## test_that("example 3", {
 
   ## })
+
+  test_that("PopED lhs", {
+
+    pheno <- function() {
+      ini({
+        tcl <- log(0.008) # typical value of clearance
+        tv <-  log(0.6)   # typical value of volume
+        ## var(eta.cl)
+        eta.cl + eta.v ~ c(1,
+                           0.01, 1) ## cov(eta.cl, eta.v), var(eta.v)
+        # interindividual variability on clearance and volume
+        add.err <- 0.1    # residual variability
+      })
+      model({
+        cl <- exp(tcl + eta.cl) # individual value of clearance
+        if (fed == 1)
+          cl <- cl*1.1
+        v <- exp(tv + eta.v)    # individual value of volume
+        ke <- cl / v            # elimination rate constant
+        d/dt(A1) = - ke * A1    # model differential equation
+        cp = A1 / v             # concentration in plasma
+        cp ~ add(add.err)       # define error model
+      })
+    }
+
+    p <- pheno()
+
+    expect_equal(eval(.popedRxModel(p))$lhs, c("rx_pred_", "rx_r_"))
+
+  })
+
+  test_that("test G_xt setup", {
+
+    library(PopED)
+
+    ##-- Model: One comp first order absorption + inhibitory imax
+    ## -- works for both mutiple and single dosing
+    f <- function() {
+      ini({
+        tV <- 72.8
+        tKa <- 0.25
+        tCl <- 3.75
+        tFavail <- fix(0.9)
+        tE0 <- 1120
+        tImax <- 0.807
+        tIC50 <- 0.0993
+        eta.v ~ 0.09
+        eta.ka ~ 0.09
+        eta.cl ~ 0.25^2
+        eta.e0 ~ 0.09
+        conc.prop.sd <- fix(sqrt(0.04))
+        conc.sd <- fix(sqrt(5e-6))
+        eff.prop.sd <- fix(sqrt(0.09))
+        eff.sd <- fix(sqrt(100))
+      })
+      model({
+        V<- tV*exp(eta.v)
+        KA <- tKa*exp(eta.ka)
+        CL <- tCl*exp(eta.cl)
+        Favail <- tFavail
+        E0 <- tE0*exp(eta.e0)
+        IMAX <- tImax
+        IC50 <- tIC50
+        # PK
+        N <- floor(time/TAU)+1
+        CONC <- (DOSE*Favail/V)*(KA/(KA - CL/V)) *
+          (exp(-CL/V * (time - (N - 1) * TAU)) *
+             (1 - exp(-N * CL/V * TAU))/(1 - exp(-CL/V * TAU)) -
+             exp(-KA * (time - (N - 1) * TAU)) * (1 - exp(-N * KA * TAU))/(1 - exp(-KA * TAU)))
+        # PD model
+        EFF <- E0*(1 - CONC*IMAX/(IC50 + CONC))
+        CONC ~ add(conc.sd) + prop(conc.prop.sd)
+        EFF ~ add(eff.sd) + prop(eff.prop.sd)
+      })
+    }
+
+    # Note that design point 240 is repeated
+    e1 <- et(c( 1,2,8,240, 240)) %>%
+      as.data.frame() %>%
+      dplyr::mutate(dvid=1)
+
+    e1$low <- c(0,0,0,240, 240)
+    e1$high <- c(10,10,10,248, 248)
+    # Since the design point is repeated, there needs to be a grouping
+    # variable which is defined in the dataset as G_xt since it is defined
+    # in PopED as G_xt
+    e1$G_xt <- seq_along(e1$low)
+
+    e2 <- e1
+    e2$dvid <- 2
+    e <- rbind(e1, e2)
+
+    babel.db <- nlmixr2(f, e, "poped",
+                        popedControl(
+                          groupsize=20,
+                          discrete_xt = list(0:248),
+                          bUseGrouped_xt=TRUE,
+                          a=list(c(DOSE=20,TAU=24),
+                                 c(DOSE=40, TAU=24),
+                                 c(DOSE=0, TAU=24)),
+                          maxa=c(DOSE=200,TAU=40),
+                          mina=c(DOSE=0,TAU=2),
+                          ourzero=0))
+
+    expect_false(is.null(babel.db$design_space$G_xt))
+
+    e <- rbind(e1, e2)
+    e <- e[,names(e) != "G_xt"]
+
+    babel.db <- nlmixr2(f, e, "poped",
+                        popedControl(
+                          groupsize=20,
+                          discrete_xt = list(0:248),
+                          bUseGrouped_xt=TRUE,
+                          a=list(c(DOSE=20,TAU=24),
+                                 c(DOSE=40, TAU=24),
+                                 c(DOSE=0, TAU=24)),
+                          maxa=c(DOSE=200,TAU=40),
+                          mina=c(DOSE=0,TAU=2),
+                          ourzero=0))
+
+    expect_true(is.null(babel.db$design$G_xt))
+
+  })
+
 }

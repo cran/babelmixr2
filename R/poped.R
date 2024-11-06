@@ -17,13 +17,14 @@
 #' This should not typically be called directly
 #'
 #' @param e environment with setup information for popEd
+#' @param eglobal global environment for poped info
 #' @param full setup the full model
 #' @return nothing, called for side effects
-#' @export
 #' @keywords internal
 #' @author Matthew L. Fidler
-.popedSetup <- function(e, full=FALSE) {
-  invisible(.Call(`_babelmixr2_popedSetup`, e, full))
+.popedSetup <- function(e, eglobal, full=FALSE) {
+  popedMultipleEndpointResetTimeIndex()
+  invisible(.Call(`_babelmixr2_popedSetup`, e, eglobal, full))
 }
 #' Solve poped problem for appropriate times with single/multiple endpoint models
 #'
@@ -289,6 +290,7 @@ rxUiGet.popedFgFun <- function(x, ...) {
 attr(rxUiGet.popedFgFun, "desc") <- "PopED parameter model (fg_fun)"
 
 .poped <- new.env(parent=emptyenv())
+.poped$curLib <- NULL
 .poped$s <- NULL
 .poped$modelNumber <- 1L
 .poped$curNumber <- -1L
@@ -336,17 +338,17 @@ rxUiGet.popedFfFun <- function(x, ...) {
     # be in the right order
     if (.lu <=  .(.poped$maxn)) {
       # only check for time reset if it is specified in the model
+      poped.db <- .popedRxRunSetup(poped.db)
       .p <- babelmixr2::popedMultipleEndpointParam(p, .u, model_switch,
                                                    .(.poped$maxn),
                                                    poped.db$babelmixr2$optTime)
-      .popedRxRunSetup(poped.db)
-      .ret <- .popedSolveIdME(.p, .u, .xt, model_switch, .(length(.predDf$cond)),
-                              .id-1, .totn)
+      .ret <- try(.popedSolveIdME(.p, .u, .xt, model_switch, .(length(.predDf$cond)),
+                                  .id-1, .totn), silent=TRUE)
     } else if (.lu > .(.poped$maxn)) {
       .p <- p[-1]
-      .popedRxRunFullSetupMe(poped.db, .xt, model_switch)
-      .ret <- .popedSolveIdME2(.p, .u, .xt, model_switch, .(length(.predDf$cond)),
-                               .id-1, .totn)
+      poped.db <- .popedRxRunFullSetupMe(poped.db, .xt, model_switch)
+      .ret <- try(.popedSolveIdME2(.p, .u, .xt, model_switch, .(length(.predDf$cond)),
+                                   .id-1, .totn), silent=TRUE)
     }
     return(list(f=matrix(.ret$rx_pred_, ncol=1),
                 poped.db=poped.db))
@@ -418,12 +420,12 @@ attr(rxUiGet.popedFfFun, "desc") <- "PopED parameter model (ff_fun)"
   }
   if (.poped$setup != 1L) {
     rxode2::rxSolveFree()
-    .popedSetup(popedDb$babelmixr2, FALSE)
+    .popedSetup(popedDb$babelmixr2, .poped, FALSE)
     .poped$curNumber <- popedDb$babelmixr2$modelNumber
     .poped$setup <- 1L
     .poped$fullXt <- NULL
   }
-  invisible()
+  invisible(popedDb)
 }
 #' Setup a full solve for a multiple-endpoint model
 #'
@@ -488,11 +490,12 @@ attr(rxUiGet.popedFfFun, "desc") <- "PopED parameter model (ff_fun)"
                                 })))
     .et <- rxode2::etTrans(.dat, .e$modelF)
     .e$dataF <- .et
-    .popedSetup(.e, TRUE)
+    .popedSetup(.e, .poped, TRUE)
     .poped$fullXt <- length(xt)
     .poped$curNumber <- popedDb$babelmixr2$modelNumber
     .poped$setup <- 2L
   }
+  popedDb
 }
 #' Setup for a full solve with a single endpoint model
 #'
@@ -554,11 +557,12 @@ attr(rxUiGet.popedFfFun, "desc") <- "PopED parameter model (ff_fun)"
                                 })))
     .et <- rxode2::etTrans(.dat, .e$modelF)
     .e$dataF <- .et
-    .popedSetup(.e, TRUE)
+    .popedSetup(.e, .poped, TRUE)
     .poped$fullXt <- length(xt)
     .poped$curNumber <- popedDb$babelmixr2$modelNumber
     .poped$setup <- 2L
   }
+  popedDb
 }
 
 #' This gets the epsi associated with the nlmixr2/rxode2 model specification
@@ -825,7 +829,10 @@ rxUiGet.popedRxmodelBase <- function(x, ...) {
                      logical(1), USE.NAMES = FALSE))
   .mod <- .mod[.w]
   .errDf <- .iniDf[!is.na(.iniDf$err), ,drop=FALSE]
-
+  # remove if/else so extra lhs statements are not hanging around
+  .mod <- str2lang(paste0("{", rxode2::.rxPrune(as.call(c(quote(`{`), .mod))), "}"))
+  .mod <- lapply(seq_along(.mod)[-1],
+                 function(i) { .mod[[i]]})
   .mod <- lapply(seq_along(.mod),
                  function(i) {
                    .cur <- .mod[[i]]
@@ -1174,7 +1181,7 @@ attr(rxUiGet.popedNotfixedSigma, "desc") <- "PopED database $notfixed_sigma"
   .wid <- which(.nd == id)
   if (length(.wid) == 0L) {
     .data$id <- 1L
-    .nd <- names(.data)
+    .nd <- tolower(names(.data))
     .wid <- which(.nd == id)
   } else if (length(.wid) != 1L) {
     stop("duplicate ids found",
@@ -1209,7 +1216,8 @@ attr(rxUiGet.popedNotfixedSigma, "desc") <- "PopED database $notfixed_sigma"
                                        if (length(.wg_xt) == 1L) {
                                          .g_xt <- .data[[.wg_xt]]
                                          .g_xt <- .g_xt[.wd]
-                                         return(time=.time, dvid=i, G_xt=.g_xt)
+
+                                         return(data.frame(time=.time, dvid=i, G_xt=.g_xt))
                                        }
                                        return(data.frame(time=.time, dvid=i))
                                      }
@@ -1224,7 +1232,7 @@ attr(rxUiGet.popedNotfixedSigma, "desc") <- "PopED database $notfixed_sigma"
                                          if (length(.wg_xt) == 1L) {
                                            .g_xt <- .data[[.wg_xt]]
                                            .g_xt <- .g_xt[.wd]
-                                           return(time=.time, dvid=i, G_xt=.g_xt)
+                                           return(data.frame(time=.time, dvid=i, G_xt=.g_xt))
                                          }
                                          return(data.frame(time=.time, dvid=i))
                                        }
@@ -1233,9 +1241,6 @@ attr(rxUiGet.popedNotfixedSigma, "desc") <- "PopED database $notfixed_sigma"
                                           call.=FALSE)
                                    }))
                   })
-    if (length(.wg_xt) == 1L) {
-      .G_xt <- .xt$G_xt
-    }
   } else {
     .xt <- lapply(.poped$uid,
                   function(id) {
@@ -1245,6 +1250,14 @@ attr(rxUiGet.popedNotfixedSigma, "desc") <- "PopED database $notfixed_sigma"
                     .env$mt <- max(c(.ret, .env$mt))
                     .ret
                   })
+  }
+  if (length(.wg_xt) == 1L) {
+    .G_xt <- do.call(`c`,
+                     lapply(seq_along(.xt), function(i) {
+                       .xt[[i]]$G_xt
+                     }))
+  } else {
+    .G_xt <- NULL
   }
   .single <- FALSE
   .modelSwitch <- NULL
@@ -1689,7 +1702,7 @@ rxUiGet.popedOptsw <- function(x, ...) {
            if (is.null(.env$idSamples[[.id]])) {
              .curData <- .obs[.obs[[.wid]] == .id, ]
              .env$idSamples[[.id]] <- .curData[[.wtime]]
-             if (!is.na(.wdvid)) {
+             if (length(.wdvid) == 1L && !is.na(.wdvid)) {
                .env$idDvid[[.id]] <- .curData[[.wdvid]]
              }
              if (length(.env$idSamples[[.id]]) > .env$maxNumSamples) {
@@ -1714,6 +1727,9 @@ rxUiGet.popedOptsw <- function(x, ...) {
   .env$model_switch <- PopED::zeros(length(.a), .env$maxNumSamples)
   .env$model_switchT <- paste0("model_switch <- PopED::zeros(", paste0(length(.a)), ", ", .env$maxNumSamples, ")")
   .env$mt <- -Inf
+  if (length(.wdvid) != 1L) {
+    .wdvid <- NA_integer_
+  }
   lapply(seq_along(.a),
          function(i) {
            .cur <- .a[[i]]
@@ -1727,7 +1743,7 @@ rxUiGet.popedOptsw <- function(x, ...) {
            .env$xtT <- c(.env$xtT,
                          paste0("xt[", i, ", ", deparse1(seq_along(.time)),
                                 "] <- ", paste(deparse(.time), collapse="\n")))
-           if (!is.na(.wdvid)) {
+           if (length(.wdvid) == 1L && !is.na(.wdvid)) {
              .env$model_switch[i, seq_along(.time)] <- .env$idDvid[[.id]]
              .env$model_switchT <- c(.env$model_switchT,
                                      paste0("model_switch[", i, ", ", deparse1(seq_along(.time)),
@@ -1971,7 +1987,6 @@ rxUiGet.popedOptsw <- function(x, ...) {
 .setupPopEDdatabase <- function(ui, data, control) {
   # PopED environment needs:
   # - control - popedControl
-
   #
   # Data needs to match what PopED prefers, so order by id, dvid then time, not the typical ordering.  This only needs to be done in cases where there is a dvid.
   #
@@ -2034,7 +2049,6 @@ rxUiGet.popedOptsw <- function(x, ...) {
                                            discrete_a=.poped$discrete_a,
                                            optsw=.ui$popedOptsw,
                                            G_xt=.poped$G_xt)
-
     } else {
       .ln <- tolower(names(data))
       .w <- which(.ln == "id")
@@ -2921,8 +2935,6 @@ rxUiDeparse.popedControl <- function(object, var) {
   nlmixr2est::.deparseFinal(.default, object, .w, var)
 }
 
-
-
 .popedFamilyControl <- function(env, ...) {
   .ui <- env$ui
   .control <- env$control
@@ -3032,7 +3044,13 @@ babel.poped.database <- function(popedInput, ..., optTime=NA) {
   if (is.environment(popedInput$babelmixr2)) {
     .babelmixr2 <- popedInput$babelmixr2
     .db <- PopED::create.poped.database(popedInput=popedInput, ...)
-    .db$babelmixr2 <- .babelmixr2
+    .b2 <- new.env(parent=emptyenv())
+    for (v in ls(envir=.babelmixr2, all.names=TRUE)) {
+      assign(v, get(v, envir=.babelmixr2), envir=.b2)
+    }
+    .b2$modelNumber <- .poped$modelNumber
+    .poped$modelNumber <- .poped$modelNumber + 1
+    .db$babelmixr2 <- .b2
     if (is.logical(optTime) && length(optTime) == 1L &&
           !is.na(optTime)) {
       popedMultipleEndpointResetTimeIndex()
@@ -3043,4 +3061,82 @@ babel.poped.database <- function(popedInput, ..., optTime=NA) {
     stop("this object is not a PopED database from babelmixr2",
          call.=FALSE)
   }
+}
+
+#' Get the bpop_idx by variable name for a poped database created by `babelmixr2`
+#'
+#' This may work for other poped databases if the population parameters are named.
+#'
+#' @param popedInput The babelmixr2 created database
+#' @param var variable to query
+#' @return index of the variable
+#' @export
+#' @author Matthew L. Fidler
+#'
+#' @examples
+#'
+#' if (requireNamespace("PopED", quietly=TRUE)) {
+#'
+#' f <- function() {
+#'   ini({
+#'     tV <- 72.8
+#'     tKa <- 0.25
+#'     tCl <- 3.75
+#'     tF <- fix(0.9)
+#'     pedCL <- 0.8
+#'
+#'     eta.v ~ 0.09
+#'     eta.ka ~ 0.09
+#'     eta.cl ~0.25^2
+#'
+#'     prop.sd <- fix(sqrt(0.04))
+#'     add.sd <- fix(sqrt(5e-6))
+#'
+#'   })
+#'   model({
+#'     V<-tV*exp(eta.v)
+#'     KA<-tKa*exp(eta.ka) * (pedCL**isPediatric) # add covariate for pediatrics
+#'     CL<-tCl*exp(eta.cl)
+#'     Favail <- tF
+#'
+#'     N <-  floor(t/TAU)+1
+#'     y <- (DOSE*Favail/V)*(KA/(KA - CL/V)) *
+#'       (exp(-CL/V * (t - (N - 1) * TAU)) *
+#'          (1 - exp(-N * CL/V * TAU))/(1 - exp(-CL/V * TAU)) -
+#'          exp(-KA * (t - (N - 1) * TAU)) * (1 - exp(-N * KA * TAU))/(1 - exp(-KA * TAU)))
+#'
+#'     y ~ prop(prop.sd) + add(add.sd)
+#'   })
+#' }
+#'
+#' e <- et(c( 1,8,10,240,245))
+#'
+#' babel.db <- nlmixr2(f, e, "poped",
+#'                     popedControl(m = 2,
+#'                                  groupsize=20,
+#'                                  bUseGrouped_xt=TRUE,
+#'                                  a=list(c(DOSE=20,TAU=24,isPediatric = 0),
+#'                                         c(DOSE=40, TAU=24,isPediatric = 0))))
+#'
+#' babelBpopIdx(babel.db, "pedCL")
+#'
+#' }
+babelBpopIdx <- function(popedInput, var)  {
+  .w <- which(rownames(popedInput$parameters$bpop) == var)
+  if (length(.w) == 1L) return(.w)
+  stop("cannot find '", var, "' in the baelmixr2 poped model",
+       call.=FALSE)
+}
+
+#' Internal function to use with PopED to run PopED in parallel on Windows
+#'
+#' @param babelmixr2 environment in poped environment
+#' @return nothing, called for side effects
+#' @export
+#' @author Matthew L. Fidler
+#' @keywords internal
+.popedCluster <- function(babelmixr2) {
+  rxode2::rxLoad(babelmixr2$modelF)
+  rxode2::rxLoad(babelmixr2$modelMT)
+  invisible()
 }
