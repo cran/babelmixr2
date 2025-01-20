@@ -1,3 +1,14 @@
+# babelmixr2 0.1.6
+
+* Use new nlmixr2est covariate selection enforcment for babelmixr2
+
+* Fix a bug where the NONMEM export isn't working well (#839)
+
+* Check loaded `rxode2` information and compare to what the loaded
+  model information should be. This allows better checking of which
+  model is loaded and even more robust stability.  It requires
+  `rxode2` > `3.0.2`.
+
 # babelmixr2 0.1.5
 
 * Fix bug where `PopED` could error with certain `dvid` values
