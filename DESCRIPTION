@@ -2,7 +2,7 @@ Package: babelmixr2
 Type: Package
 Title: Use 'nlmixr2' to Interact with Open Source and Commercial
         Software
-Version: 0.1.6
+Version: 0.1.7
 Authors@R: c(person("Matthew","Fidler", role = c("aut", "cre"), email = "matthew.fidler@gmail.com", comment=c(ORCID="0000-0001-8538-6691")),
            person("Bill", "Denney", email="wdenney@humanpredictions.com", role="aut", comment=c(ORCID="0000-0002-5759-428X")),
            person("Theodoros", "Papathanasiou",  role="ctb"),
@@ -20,7 +20,8 @@ URL: https://nlmixr2.github.io/babelmixr2/,
 NeedsCompilation: yes
 Encoding: UTF-8
 Suggests: testthat, nlmixr2data, withr, lixoftConnectors, PKNCA (>=
-        0.10.0), rmarkdown, spelling, PopED, units, vdiffr, dplyr
+        0.10.0), rmarkdown, spelling, PopED, units (>= 0.8-6), vdiffr,
+        dplyr
 Depends: R (>= 3.5), nlmixr2 (>= 3.0.1)
 Imports: checkmate, cli, digest, lotri, nlmixr2est (>= 3.0.1),
         nonmem2rx (>= 0.1.5), monolix2rx (>= 0.0.3), methods, qs, rex,
@@ -29,11 +30,12 @@ RoxygenNote: 7.3.2
 Config/testthat/edition: 3
 LinkingTo: Rcpp, rxode2, RcppArmadillo, RcppEigen
 Language: en-US
-Packaged: 2025-01-19 14:38:34 UTC; matt
-Author: Matthew Fidler [aut, cre] (<https://orcid.org/0000-0001-8538-6691>),
-  Bill Denney [aut] (<https://orcid.org/0000-0002-5759-428X>),
+Packaged: 2025-05-07 16:00:57 UTC; matt
+Author: Matthew Fidler [aut, cre] (ORCID:
+    <https://orcid.org/0000-0001-8538-6691>),
+  Bill Denney [aut] (ORCID: <https://orcid.org/0000-0002-5759-428X>),
   Theodoros Papathanasiou [ctb],
   Nook Fulloption [ctb] (goldfish art)
 Maintainer: Matthew Fidler <matthew.fidler@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-01-20 10:30:06 UTC
+Date/Publication: 2025-05-07 16:50:07 UTC
