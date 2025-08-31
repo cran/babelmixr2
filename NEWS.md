@@ -1,3 +1,16 @@
+# babelmixr2 0.1.9
+
+* Added estimation method `fmeMcmc` which runs `FME::modMCMC()`.  It
+  is also compatible with the `coda` package; you can convert with
+  `as.mcmc(fit)` and then run coda tools like
+  `coda::raftery.diag(coda::as.mcmc(fit2))`.
+
+* Added estimation method `pseudoOptim` which runs
+  `FME::pseudoOptim()`. This estimation method requires all parameters
+  to be bound.
+
+* Added bug fix for rstudio completion
+
 # babelmixr2 0.1.8
 
 * Maintenance fix for upcoming nlmixr2est and rxode2

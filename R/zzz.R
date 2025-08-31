@@ -21,6 +21,21 @@ rxode2.api <- names(rxode2::.rxode2ptrs())
 
 
 .onLoad <- function(libname, pkgname) {
+
+  if (requireNamespace("coda", quietly = TRUE)) {
+    rxode2::.s3register("coda::as.mcmc", "nlmixr2.fmeMcmc")
+  }
+
+  rxode2::.s3register("nlmixr2est::nlmixr2Est", "fmeMcmc")
+  rxode2::.s3register("nlmixr2est::getValidNlmixrCtl", "fmeMcmc")
+  rxode2::.s3register("nlmixr2est::nmObjGetControl", "fmeMcmc")
+  rxode2::.s3register("nlmixr2est::nmObjHandleControlObject", "fmeMcmcControl")
+
+  rxode2::.s3register("nlmixr2est::nlmixr2Est", "pseudoOptim")
+  rxode2::.s3register("nlmixr2est::getValidNlmixrCtl", "pseudoOptim")
+  rxode2::.s3register("nlmixr2est::nmObjGetControl", "pseudoOptim")
+  rxode2::.s3register("nlmixr2est::nmObjHandleControlObject", "pseudoOptimControl")
+
   rxode2::.s3register("nlmixr2est::nlmixr2Est", "monolix")
   rxode2::.s3register("nlmixr2est::getValidNlmixrCtl", "monolix")
   rxode2::.s3register("nlmixr2est::nmObjGetFoceiControl", "monolix")
