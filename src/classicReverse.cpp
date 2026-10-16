@@ -44,7 +44,12 @@
 // xx = 50, Phantom event, used for transit compartments
 // Steady state events need a II data item > 0
 #define EVID0_REGULAR 1
+// steady state with a lag time: rxode2 gives the steady state part
+// (xx = 9 for SS=1, 19 for SS=2) and the dose itself as a separate
+// regular dose at the same time
+#define EVID0_SS0 9
 #define EVID0_SS 10
+#define EVID0_SS20 19
 #define EVID0_SS2 20
 #define EVID0_OFF 30
 #define EVID0_SSINF 40 
@@ -84,10 +89,10 @@ static inline void getWh(int evid, int *wh, int *cmt, int *wh100, int *whI, int 
 }
 
 static inline int getSs(int wh0, bool &hasSs, bool &hasSs2, bool &hasSsRate) {
-  if (wh0 == EVID0_SS2) {
+  if (wh0 == EVID0_SS2 || wh0 == EVID0_SS20) {
     hasSs=true;
     return  2;
-  } else if (wh0 == EVID0_SS) {
+  } else if (wh0 == EVID0_SS || wh0 == EVID0_SS0) {
     hasSs=true;
     return 1;
   } else if (wh0 == EVID0_SSINF) {
@@ -103,7 +108,7 @@ static inline int getSs(int wh0, bool &hasSs, bool &hasSs2, bool &hasSsRate) {
 using namespace Rcpp;
 
 static inline int getDvid(int &cmt, IntegerVector &dvidDvid, IntegerVector &cmtDvid) {
-  for (int j=cmtDvid.size(); j--;) {
+  for (R_xlen_t j=cmtDvid.size(); j--;) {
     if (cmtDvid[j] == cmt) {
       return(dvidDvid[j]);
     }
@@ -119,13 +124,13 @@ static inline int getDvid(int &cmt, IntegerVector &dvidDvid, IntegerVector &cmtD
 
 static inline int getAdm(int cmt, int type, std::vector<int> &admIds) {
   int id = cmt*10+type;
-  for (unsigned int i = 0; i < admIds.size(); ++i) {
+  for (size_t i = 0; i < admIds.size(); ++i) {
     if (admIds[i] == id) {
-      return i+1;
+      return (int)(i+1);
     }
   }
   admIds.push_back(id);
-  return admIds.size();
+  return (int)admIds.size();
 }
 
 static inline DataFrame createAdm(std::vector<int> &admIds) {
@@ -133,8 +138,8 @@ static inline DataFrame createAdm(std::vector<int> &admIds) {
   IntegerVector cmt(admIds.size());
   IntegerVector type(admIds.size());
   int c=0, t=0;
-  for (unsigned int i = 0; i < admIds.size(); ++i) {
-    adm[i] = i+1;
+  for (size_t i = 0; i < admIds.size(); ++i) {
+    adm[i] = (int)(i+1);
     c =admIds[i]/10;
     t = admIds[i] - c*10;
     cmt[i] = c;
@@ -175,7 +180,11 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
   bool hasSs2=false;
   bool hasSsRate=false;
   double curAmt=0.0;
-  for (unsigned int i = 0; i < evid.size(); ++i) {
+  // the dose that goes with a lagged steady state record; NONMEM and
+  // Monolix give it themselves with an SS dose, so it is dropped
+  int lagSsId = NA_INTEGER, lagSsCmt = NA_INTEGER;
+  double lagSsTime = NA_REAL, lagSsAmt = NA_REAL;
+  for (R_xlen_t i = 0; i < evid.size(); ++i) {
     int curEvid = evid[i];
     // put in defaults
     newEvid[i] = evid[i];
@@ -198,6 +207,18 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
       // these are doses
       getWh(curEvid, &wh, &cmt0, &wh100, &whI, &wh0,
             linNcmt, linKa, neq);
+      if (wh0 == EVID0_SS0 || wh0 == EVID0_SS20) {
+        lagSsId = id[i];
+        lagSsCmt = cmt[i];
+        lagSsTime = time[i];
+        lagSsAmt = amt[i];
+      } else if (wh0 == EVID0_REGULAR && lagSsId == id[i] &&
+                 lagSsCmt == cmt[i] && lagSsTime == time[i] &&
+                 lagSsAmt == amt[i]) {
+        lagSsId = NA_INTEGER;
+        keepItem[i] = false;
+        continue;
+      }
       if (wh0 ==EVID0_OFF) {
         // turn off a compartment; supported in nonmem
         // In monoix "Turning off compartments should instead be defined in the model file"
@@ -251,7 +272,7 @@ List convertDataBack(IntegerVector id, NumericVector time, NumericVector amt, Nu
             bool foundOff=false;
             double t2=0;
             int curId = id[i];
-            for (int j=i; j < evid.size(); j++){
+            for (R_xlen_t j=i; j < evid.size(); j++){
               if (id[j] != curId) {
                 break;
               }

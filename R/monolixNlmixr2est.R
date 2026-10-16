@@ -17,8 +17,39 @@
   assign("control", .control, envir=.ui)
 }
 
+#' Refuse a LIMIT on uncensored observations (M2) for Monolix
+#'
+#' nlmixr2 reads a finite `LIMIT` on an uncensored observation as a
+#' truncated likelihood (M2); Monolix only uses `LIMIT` with a
+#' censored value (it needs a `CENS` column, "Column 'LIMIT' of type
+#' 'LIMIT' requires a column of type 'CENSORING'").
+#'
+#' @param data data written for Monolix
+#' @return nothing; an error for M2 data
+#' @noRd
+.monolixAssertNoM2 <- function(data) {
+  if (!any(names(data) == "LIMIT")) {
+    return(invisible())
+  }
+  .cens <- if (any(names(data) == "CENS")) data$CENS else rep(0, nrow(data))
+  .obs <- is.na(data$EVID) | data$EVID == 0
+  .m2 <- .obs & .cens %in% 0 & is.finite(data$LIMIT)
+  if (any(.m2)) {
+    stop("a LIMIT on uncensored observations (truncated, M2) is not ",
+         "supported in Monolix; Monolix only uses LIMIT with censored ",
+         "values (CENS)",
+         call. = FALSE)
+  }
+  invisible()
+}
+
 .monolixFormatData <- function(data, ui) {
   .ret <- data
+  .monolixAssertNoM2(.ret)
+  if (any(names(.ret) == "LIMIT")) {
+    # nlmixr2 writes no limit as -Inf/Inf; Monolix needs it missing
+    .ret$LIMIT[!is.finite(.ret$LIMIT)] <- NA_real_
+  }
   .ret$SS <- ifelse(.ret$SS == 0, NA_real_, .ret$SS)
   .ret$YTYPE <- ifelse(.ret$YTYPE == 0, NA_real_, .ret$YTYPE)
   .ret$ADM <- ifelse(.ret$ADM == 0, NA_real_, .ret$ADM)
@@ -93,9 +124,18 @@
     env$covMethod <- rxode2::rxGetControl(.ui, ".covMethod", "Monolix")
   }
 
+  # the observations Monolix used (as for NONMEM): nlmixr2est also
+  # counts evid=2 rows and, with time not starting at zero, one more
+  # row per subject, which shifts the objective function
+  env$nobs <- .lastNobs
+  env$nobs2 <- .lastNobs
   # When running the focei problem to create the nlmixr object, you also need a
   #  foceiControl object
   .monolixControlToFoceiControl(env)
+  # nlmixr2CreateOutputFromUi() may add its own objective (like FOCEi
+  # with tableControl(cwres=TRUE)) and switch env$ofvType to it, so keep
+  # the Monolix objective type here (#94)
+  .ofvType <- env$ofvType
   env <- nlmixr2est::nlmixr2CreateOutputFromUi(env$ui, data=env$origData, control=env$control, table=env$table, env=env, est="monolix")
   .env <- env$env
   .env$method <- "monolix"
@@ -112,7 +152,7 @@
           OBJF = .objf, AIC = .objf2 + 2 * attr(get("logLik", .env), "df"),
           BIC = .objf2 + log(.env$nobs) * attr(get("logLik", .env), "df"),
           "Log-likelihood" = as.numeric(.llik), check.names = FALSE)
-  nlmixr2est::nlmixrAddObjectiveFunctionDataFrame(env, .tmp, .env$ofvType)
+  nlmixr2est::nlmixrAddObjectiveFunctionDataFrame(env, .tmp, .ofvType)
   env
 }
 
@@ -134,6 +174,90 @@
   invisible(.lixoftStarted)
 }
 
+# thin wrappers so the failure handling in .monolixLixoftRun() can be
+# tested without Monolix
+.lixoftLoadProject <- function(mlxtran) {
+  lixoftConnectors::loadProject(mlxtran)
+}
+.lixoftRunScenario <- function() {
+  lixoftConnectors::runScenario()
+}
+
+#' Run a lixoftConnectors call, keeping what it prints
+#'
+#' lixoftConnectors reports problems by printing them (like Monolix's
+#' `[ERROR]` lines), so they are collected here to be part of
+#' babelmixr2's error.  They are still printed.
+#'
+#' @param expr lixoftConnectors call
+#' @return list with `value` (the result, or the `try-error`) and `text`
+#'   (what was printed)
+#' @noRd
+.lixoftCapture <- function(expr) {
+  .msg <- character(0)
+  .out <- utils::capture.output({
+    .value <- try(withCallingHandlers(
+      expr,
+      message = function(m) {
+        .msg <<- c(.msg, conditionMessage(m))
+      },
+      warning = function(w) {
+        .msg <<- c(.msg, conditionMessage(w))
+      }
+    ), silent = TRUE)
+  })
+  if (length(.out) > 0L) {
+    cat(.out, sep = "\n")
+  }
+  if (inherits(.value, "try-error")) {
+    .msg <- c(.msg, attr(.value, "condition")$message)
+  }
+  list(value = .value, text = trimws(unlist(strsplit(c(.out, .msg), "\n"))))
+}
+
+#' Monolix's reason for a failed lixoftConnectors call
+#'
+#' @param text what lixoftConnectors printed (from `.lixoftCapture()`)
+#' @return the error lines (or everything printed), for an error message
+#' @noRd
+.lixoftReason <- function(text) {
+  text <- text[nzchar(text)]
+  .err <- grep("ERROR", text, value = TRUE)
+  if (length(.err) == 0L) .err <- text
+  if (length(.err) == 0L) {
+    return("(lixoftConnectors printed no reason)")
+  }
+  paste0("  ", .err, collapse = "\n")
+}
+
+#' Load and run a Monolix project with lixoftConnectors
+#'
+#' lixoftConnectors reports a failure by returning `FALSE` (with an
+#' `[ERROR]` message), not by signalling an R error; carrying on would
+#' wait forever for output Monolix never writes.
+#'
+#' @param mlxtran mlxtran file
+#' @return nothing, called for its side effect; errors when Monolix
+#'   cannot load or run the project
+#' @noRd
+.monolixLixoftRun <- function(mlxtran) {
+  .x <- .lixoftCapture(.lixoftLoadProject(mlxtran))
+  if (inherits(.x$value, "try-error") || isFALSE(.x$value)) {
+    stop("lixoftConnectors cannot load '", mlxtran, "':\n",
+         .lixoftReason(.x$text),
+         call. = FALSE)
+  }
+  .minfo("lixoftConnectors::runScenario()")
+  .x <- .lixoftCapture(.lixoftRunScenario())
+  if (inherits(.x$value, "try-error") || isFALSE(.x$value)) {
+    stop("lixoftConnectors::runScenario() failed for '", mlxtran, "':\n",
+         .lixoftReason(.x$text),
+         call. = FALSE)
+  }
+  .minfo("done")
+  invisible()
+}
+
 #' Run NONMEM using either the user-specified command or function
 #'
 #' @param ui The nlmixr2 UI object for running
@@ -152,7 +276,6 @@
          call.=FALSE)
   }
   cmd(mlxtran=ui$monolixMlxtranFile, directory=ui$monolixExportPath, ui=ui)
-  NULL
 }
 
 .monolixFamilyFit <- function(env, ...) {
@@ -168,7 +291,7 @@
   if (length(.tmp$adm) == 0) {
     .tmp <- structure(list(adm = integer(0),
                            cmt = integer(0),
-                           type = structure(integer(0), .Label = c("empty", "modelRate", "modelDur", "infusion", "bolus"), class = "factor"),
+                           type = factor(character(0), levels = c("empty", "modelRate", "modelDur", "infusion", "bolus")),
                            f = double(0),
                            dur=double(0),
                            lag=double(0),
@@ -187,12 +310,12 @@
   .et <- rxode2::etTrans(.ret$dataSav, .ui$mv0, addCmt=TRUE)
   .nTv <- attr(class(.et), ".rxode2.lst")$nTv
   if (is.null(.nTv)) {
-    .tv <- names(.et)[-seq(1, 6)]
+    .tv <- names(.et)[-seq_len(6)]
     .nTv <- length(.tv)
   } else {
     .tv <- character(0)
     if (.nTv != 0) {
-      .tv <- names(.et)[-seq(1, 6)]
+      .tv <- names(.et)[-seq_len(6)]
     }
   }
   .muRefCovariateDataFrame <- .ui$muRefCovariateDataFrame
@@ -242,21 +365,21 @@
   .runLock <- .ui$monolixRunLock
 
   .cmd <- rxode2::rxGetControl(.ui, "runCommand", "")
-  if (checkmate::testFileExists(.qs)) {
+  .cachedFit <- .babelmixr2LoadFitCache(.qs)
+  if (!is.null(.cachedFit)) {
     .minfo("load saved nlmixr2 object")
-    .ret <- qs2::qs_read(.qs)
-    if (!exists("parHistData", .ret$env)) {
-      .tmp <- .ret$ui$monolixParHistory
+    if (!exists("parHistData", .cachedFit$env)) {
+      .tmp <- .cachedFit$ui$monolixParHistory
       if (is.null(.tmp)) {
         .minfo("monolix parameter history needs exported charts, please export charts")
       } else {
         .tmp$type <- "Unscaled"
-        assign("parHistData", .tmp, .ret$env)
+        assign("parHistData", .tmp, .cachedFit$env)
         .minfo("monolix parameter history integrated into fit object")
-        qs2::qs_save(.ret, .qs)
+        .babelmixr2SaveFitCache(.cachedFit, .qs)
       }
     }
-    return(.ret)
+    return(.cachedFit)
   } else if (!checkmate::testFileExists(.model)) {
     .minfo("writing monolix files")
     writeLines(text=.modelText, con=.model)
@@ -276,14 +399,7 @@
       }
     } else {
       if (.hasLixoftConnectors()) {
-        .x <- try(lixoftConnectors::loadProject(.mlxtran), silent=TRUE)
-        if (inherits(.x, "try-error")) {
-          stop("lixoftConnectors cannot load mlxtran",
-               call.=FALSE)
-        }
-        .minfo("lixoftConnectors::runScenario()")
-        lixoftConnectors::runScenario()
-        .minfo("done")
+        .monolixLixoftRun(.mlxtran)
         .runLS <- TRUE
       } else if (dir.exists(.exportPath)) { # needs to skip for tests
       } else if (!interactive()) {
@@ -329,9 +445,8 @@
       .tmp$type <- "Unscaled"
       assign("parHistData", .tmp, .ret$env)
       .minfo("monolix parameter history integrated into fit object")
-      qs2::qs_save(.ret, .qs)
     }
-    qs2::qs_save(.ret, .qs)
+    .babelmixr2SaveFitCache(.ret, .qs)
   }
   return(.ret)
 }
@@ -341,7 +456,17 @@
   if (cmd != "") {
     fullCmd <- paste(cmd, mlxtran)
     .minfo(paste0("run Monolix: ", fullCmd))
-    system(fullCmd)
+    .status <- system(fullCmd)
+    # a command (unlike a runCommand function) has finished here, so
+    # Monolix will not write its output later
+    if (!dir.exists(directory)) {
+      stop("Monolix did not create its output directory '", directory, "'\n",
+           "  run command: '", fullCmd, "'\n",
+           "  exit status: ", .status, "\n",
+           "is monolixControl(runCommand=) the command that runs Monolix?",
+           call. = FALSE)
+    }
+    invisible(.status)
   } else {
     stop("run Monolix manually and rerun nlmixr() or setup Monolix's run command")
   }
@@ -349,9 +474,10 @@
 
 #' @export
 nlmixr2Est.monolix <- function(env, ...) {
-  .model <- nlmixr2est::.uiApplyMu2(env)
   .ui <- env$ui
   rxode2::assertRxUiMuRefOnly(.ui, " for the estimation routine 'monolix'", .var.name=.ui$modelName)
+  # Monolix needs between subject variability
+  rxode2::assertRxUiMixedOnly(.ui, " for the estimation routine 'monolix'", .var.name=.ui$modelName)
   .ui <- rxode2::rxUiDecompress(env$ui)
   nlmixr2est::nmObjUiSetCompressed(FALSE)
   on.exit({nlmixr2est::nmObjUiSetCompressed(TRUE)})
@@ -362,7 +488,24 @@ nlmixr2Est.monolix <- function(env, ...) {
   rxode2::assertRxUiTransformNormal(.ui, " for the estimation routine 'monolix'", .var.name=.ui$modelName)
   rxode2::assertRxUiRandomOnIdOnly(.ui, " for the estimation routine 'monolix'", .var.name=.ui$modelName)
   rxode2::assertRxUiEstimatedResiduals(.ui, " for the estimation routine 'monolix'", .var.name=.ui$modelName)
+  # Monolix's residual error models (constant, proportional, combined1/2)
+  # and distributions (normal, logNormal, logitNormal)
+  rxode2::assertRxUiErrType(.ui, c("add", "prop", "add + prop"),
+                            " for the estimation routine 'monolix'", .var.name=.ui$modelName)
+  rxode2::assertRxUiTransform(.ui, c("untransformed", "lnorm", "logit"),
+                              " for the estimation routine 'monolix'", .var.name=.ui$modelName)
+  .mlxtranPriorInfo(.ui) # refuse priors Monolix cannot represent before running
+  # linCmt() is written as Monolix's pkmodel() or as ODEs
+  .micro <- .bblLinCmtToOde(env, "Monolix",
+                            native=(.bblLinCmtControl(env$control, "pkmodel") == "pkmodel"))
+  # if/else branches Monolix cannot write are pruned (written as
+  # arithmetic), as set by the prune option of monolixControl
+  if (.bblPruneControl(env, nested = TRUE, reassign = TRUE)) {
+    .bblPruneIf(env, "Monolix")
+  }
+  .ui <- env$ui
   .monolixFamilyControl(env, ...)
+  rxode2::rxAssignControlValue(.ui, ".linCmtMicro", .micro)
   nlmixr2est::nmObjUiSetCompressed(FALSE)
 
   on.exit({
@@ -370,6 +513,14 @@ nlmixr2Est.monolix <- function(env, ...) {
       rm("control", envir=.ui)
     }
   }, add=TRUE)
-  nlmixr2est::.uiFinalizeMu2(.monolixFamilyFit(env, ...), .model)
+  .monolixFamilyFit(env, ...)
 }
 attr(nlmixr2Est.monolix, "covPresent") <- TRUE
+attr(nlmixr2Est.monolix, "type") <- "External"
+attr(nlmixr2Est.monolix, "description") <- "Monolix (external software, SAEM)"
+## normal priors, written as Monolix MAP estimation (see R/monolixPriors.R);
+## omega normal priors are then refused by `.mlxtranPriorInfo()`
+attr(nlmixr2Est.monolix, "nlmixr2Priors") <- "tnpri"
+attr(nlmixr2Est.monolix, "mu") <- function(control) {
+  isTRUE(control$muRefCovAlg)
+}

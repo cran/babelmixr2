@@ -24,12 +24,14 @@ Simplify units by removing repeated units from the numerator and denominator
 are considered unitless.
 }
 \examples{
+\dontshow{if (requireNamespace("units", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 simplifyUnit("kg", "kg/mL")
 # units that don't match exactly are not cancelled
 simplifyUnit("kg", "g/mL")
+\dontshow{\}) # examplesIf}
 }
 \seealso{
-Other Unit conversion: 
-\code{\link{modelUnitConversion}()}
+Other Unit conversion:
+\code{\link[=modelUnitConversion]{modelUnitConversion()}}
 }
 \concept{Unit conversion}

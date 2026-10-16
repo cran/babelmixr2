@@ -8,6 +8,8 @@ monolixControl(
   nbSSDoses = 7,
   useLinearization = FALSE,
   stiff = FALSE,
+  linCmt = c("pkmodel", "ode"),
+  prune = "auto",
   addProp = c("combined2", "combined1"),
   exploratoryAutoStop = FALSE,
   smoothingAutoStop = FALSE,
@@ -43,29 +45,28 @@ fim.}
 
 \item{stiff}{boolean for using the stiff ODE solver}
 
-\item{addProp}{specifies the type of additive plus proportional
-  errors, the one where standard deviations add (combined1) or the
-  type where the variances add (combined2).
+\item{linCmt}{How a \code{linCmt()} model is written for Monolix:
+\code{"pkmodel"} uses Monolix's closed-form \code{pkmodel()} macro when the
+model allows it and otherwise translates the model to ODEs;
+\code{"ode"} always translates the model to ODEs (with
+\code{rxode2::linToOde()})}
 
-The combined1 error type can be described by the following equation:
+\item{prune}{How \code{if}/\verb{else} statements are written for Monolix:
+\code{"auto"} (default) writes \code{if}/\code{elseif}/\verb{else} statements as
+Monolix \code{if} blocks and prunes the \code{if}/\verb{else} branches only when
+the model uses \code{ifelse()} (which Monolix cannot write); \code{TRUE}
+always prunes a model with \code{if}/\verb{else} statements and \code{FALSE}
+never prunes.  Pruning uses \code{rxode2}'s branch pruning, which writes
+each branch as an arithmetic expression.  A pruned fit contains the
+pruned model.}
 
-  \deqn{y = f + (a + b\times f^c) \times \varepsilon}{y = f + (a + b*f^c)*err}
-
-The combined2 error model can be described by the following equation:
-
- \deqn{y = f + \sqrt{a^2 + b^2\times f^{2\times c}} \times \varepsilon}{y = f + sqrt(a^2 + b^2*(f^c)^2)*err}
-
- Where:
-
- - y represents the observed value
-
- - f represents the predicted value
-
- - a  is the additive standard deviation
-
- - b is the proportional/power standard deviation
-
- - c is the power exponent (in the proportional case c=1)}
+\item{addProp}{Type of additive-plus-proportional error: `"combined1"`,
+where standard deviations add:
+\deqn{y = f + (a + b\times f^c) \times \varepsilon}{y = f + (a + b*f^c)*err};
+or `"combined2"`, where variances add:
+\deqn{y = f + \sqrt{a^2 + b^2\times f^{2\times c}} \times \varepsilon}{y = f + sqrt(a^2 + b^2*(f^c)^2)*err}.
+Here y = observed, f = predicted, a = additive sd, b = proportional/power
+sd, c = power exponent (1 in the proportional case).}
 
 \item{exploratoryAutoStop}{logical to turn on or off exploratory
 phase auto-stop of SAEM (default 250)}
@@ -125,8 +126,7 @@ will calculate tables. By default this is \code{TRUE}}
 0.95 or 95\% confidence.}
 
 \item{sigdigTable}{Significant digits in the final output table.
-If not specified, then it matches the significant digits in the
-`sigdig` optimization algorithm.  If `sigdig` is NULL, use 3.}
+If not specified (`NULL`), it defaults to `sigdig`.}
 
 \item{absolutePath}{Boolean indicating if the absolute path should
 be used for the monolix runs}
@@ -135,23 +135,12 @@ be used for the monolix runs}
 \code{NULL} try to infer from the model name (could be \code{x} if not
 clear).  Otherwise use this character for outputs.}
 
-\item{muRefCovAlg}{This controls if algebraic expressions that can
-  be mu-referenced are treated as mu-referenced covariates by:
-
-  1. Creating a internal data-variable `nlmixrMuDerCov#` for each
-     algebraic mu-referenced expression
-
-  2. Change the algebraic expression to `nlmixrMuDerCov# * mu_cov_theta`
-
-  3. Use the internal mu-referenced covariate for saem
-
-  4. After optimization is completed, replace `model({})` with old
-  `model({})` expression
-
-  5. Remove `nlmixrMuDerCov#` from nlmix2 output
-
-In general, these covariates should be more accurate since it
-changes the system to a linear compartment model.  Therefore, by default this is `TRUE`.}
+\item{muRefCovAlg}{When `TRUE` (default), algebraic expressions that can
+be mu-referenced are internally rewritten as mu-referenced
+covariates and restored after optimization. Mirrors
+\code{saemControl(muRefCovAlg=)}/\code{nlmeControl(muRefCovAlg=)};
+for \code{foceiControl()} only takes effect when
+\code{muModel != "none"}.}
 
 \item{run}{Should monolix be run and the results be imported to nlmixr2?  (Default is TRUE)}
 

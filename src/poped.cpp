@@ -21,6 +21,7 @@
 
 #include "timeIndexer.h"
 
+// Intentionally global; R is single-threaded.
 timeIndexer globalTimeIndexer;
 
 
@@ -230,9 +231,6 @@ Rcpp::NumericVector popedMultipleEndpointParam(Rcpp::NumericVector p,
   return ret;
 }
 
-#define max2( a , b )  ( (a) > (b) ? (a) : (b) )
-#define isSameTime(xout, xp) (fabs((xout)-(xp))  <= DBL_EPSILON*max2(fabs(xout),fabs(xp)))
-
 extern "C" {
 #define iniRxodePtrs _babelmixr2_iniRxodePtrs
   iniRxode2ptr
@@ -245,6 +243,7 @@ using namespace Rcpp;
 
 #define popedOde(id) ind_solve(rx, id, rxInner.dydt_liblsoda, rxInner.dydt_lsoda_dum, rxInner.jdum_lsoda, rxInner.dydt, rxInner.update_inis, rxInner.global_jt)
 
+// These globals are intentionally not thread-safe; R is single-threaded.
 Environment _popedE;
 Environment _popedEglobal;
 
@@ -269,6 +268,7 @@ struct rxSolveF {
   int neq = NA_INTEGER;
 };
 
+// Intentionally global; R is single-threaded.
 rxSolveF rxInner;
 
 SEXP rxUpdateFn(SEXP trans) {
@@ -320,6 +320,7 @@ void rxClearFuns(rxSolveF *inner){
   inner->dydt_liblsoda         = NULL;
 }
 
+// Intentionally global; R is single-threaded.
 rx_solve *rx;
 
 struct popedOptions {
@@ -336,6 +337,7 @@ struct popedOptions {
   bool loaded=false;
 };
 
+// Intentionally global; R is single-threaded.
 popedOptions popedOp;
 
 //[[Rcpp::export]]
@@ -561,8 +563,8 @@ Rcpp::DataFrame popedSolveIdME(NumericVector &theta,
   NumericVector t(totn);
   arma::vec f(totn);
   arma::vec w(totn);
-  int nrow = umt.size();
-  arma::mat matMT(nrow, nend*2+1);
+  R_xlen_t nrow = umt.size();
+  arma::mat matMT(static_cast<int>(nrow), nend*2+1);
   List we(nend);
   for (int i = 0; i < nend; i++) {
     LogicalVector curLV = LogicalVector(totn);
@@ -570,7 +572,7 @@ Rcpp::DataFrame popedSolveIdME(NumericVector &theta,
     std::fill(curLV.begin(), curLV.end(), 0);
     we[i] = curLV;
   }
-  popedSolveFidMat(matMT, theta, id, nrow, nend);
+  popedSolveFidMat(matMT, theta, id, static_cast<int>(nrow), nend);
   // this gets the information from:
   // - the model time
   // - the model_switch
@@ -588,11 +590,12 @@ Rcpp::DataFrame popedSolveIdME(NumericVector &theta,
   // model_switch and time
   size_t nId = globalTimeIndexer.getNid();
   std::vector<double> ut = globalTimeIndexer.getUniqueTimes();
-  for (int i = 0; i < (int)ut.size(); ++i) {
+  for (R_xlen_t i = 0; i < (R_xlen_t)ut.size(); ++i) {
     double curT = matMT(i, 0);
     const auto& infos= globalTimeIndexer.getTimeInfo(curT);
     for (const auto& info : infos) {
       if (info.id > (int)nId ||
+          info.id > nend ||
           info.id <= 0) {
         Rcpp::stop("modelSwitch need to be sequential 1, 2, 3, ..., n");
       }
@@ -658,14 +661,14 @@ Rcpp::DataFrame popedSolveIdME2(NumericVector &theta,
   NumericVector t(totn);
   arma::vec f(totn);
   arma::vec w(totn);
-  int nrow = umt.size();
-  arma::mat matMT(nrow, nend*2+1);
+  R_xlen_t nrow = umt.size();
+  arma::mat matMT(static_cast<int>(nrow), nend*2+1);
   List we(nend);
   for (int i = 0; i < nend; i++) {
     we[i] = LogicalVector(totn);
   }
 
-  popedSolveFidMat2(matMT, theta, id, nrow, nend);
+  popedSolveFidMat2(matMT, theta, id, static_cast<int>(nrow), nend);
   // arma::uvec m = as<arma::uvec>(match(mt, t))-1;
   // f = f(m);
   // w = w(m);
@@ -678,8 +681,11 @@ Rcpp::DataFrame popedSolveIdME2(NumericVector &theta,
       cur[i] = (curMS-1 == j);
       we[j] = cur;
     }
-    for (int j = 0; j < nrow; ++j) {
+    for (R_xlen_t j = 0; j < nrow; ++j) {
       if (curT == matMT(j, 0)) {
+        if (curMS < 1 || curMS > nend) {
+          Rcpp::stop("modelSwitch need to be sequential 1, 2, 3, ..., n");
+        }
         f[i] = matMT(j, (curMS-1)*2+1);
         w[i] = matMT(j, (curMS-1)*2+2);
         break;

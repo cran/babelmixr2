@@ -26,7 +26,7 @@ rxUiGet.nonmemExportPath <- function(x, ...) {
   }
   .extra <- ""
   if (exists(".num", .ui)) {
-    .num <- get(".num", .num, .ui)
+    .num <- get(".num", envir=.ui)
   } else {
     .num <- rxode2::rxGetControl(.ui, ".modelNumber", 0)
   }
@@ -105,7 +105,7 @@ rxUiGet.nonmemQs <- function(x, ...) {
   paste0(rxUiGet.nonmemModelName(x, ...),
          ifelse(rxode2::rxGetControl(.ui, "readRounding", FALSE), "-rounding",
                 ifelse(rxode2::rxGetControl(.ui, "readBadOpt", FALSE), "-bad-opt", "")),
-         ".qs2")
+         ".rds")
 }
 attr(rxUiGet.nonmemQs, "rstudio") <- ""
 

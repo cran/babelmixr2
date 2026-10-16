@@ -12,6 +12,16 @@ nmObjGetControl.monolix2rx <- function(x, ...) {
   stop("cannot find monolix2rx related control object", call.=FALSE)
 }
 
+## minSS/maxSS for Monolix's nbdoses, raised to rxode2's floor (minSS >= 5,
+## maxSS >= 7); monolix2rx after 0.0.7 has .getSsLimits()
+.monolix2rxSsLimits <- function(model) {
+  .f <- tryCatch(getExportedValue("monolix2rx", ".getSsLimits"),
+                 error=function(e) NULL)
+  if (is.function(.f)) return(.f(model))
+  .nss <- monolix2rx::.getNbdoses(model)
+  c(minSS=max(.nss, 5L), maxSS=max(.nss + 1L, 7L))
+}
+
 .monolix2rxToFoceiControl <- function(env, model, assign=FALSE) {
   ## maxSS=nbSSDoses + 1,
   ## minSS=nbSSDoses,
@@ -20,15 +30,15 @@ nmObjGetControl.monolix2rx <- function(x, ...) {
   ## atol=ifelse(stiff, 1e-9, 1e-6),
   ## rtol=ifelse(stiff, 1e-6, 1e-3),
   ## method=ifelse(stiff, "liblsoda", "dop853")
-  .nbSsDoses <- monolix2rx::.getNbdoses(model)
+  .ss <- .monolix2rxSsLimits(model)
   .stiff <- monolix2rx::.getStiff(model)
   .rxControl <- rxode2::rxControl(covsInterpolation="locf",
                                   atol=ifelse(.stiff, 1e-9, 1e-6),
                                   rtol=ifelse(.stiff, 1e-6, 1e-3),
                                   ssRtol=100,
                                   ssAtol=100,
-                                  maxSS=.nbSsDoses + 1,
-                                  minSS=.nbSsDoses,
+                                  maxSS=.ss[["maxSS"]],
+                                  minSS=.ss[["minSS"]],
                                   method=ifelse(.stiff, "liblsoda", "dop853"),
                                   safeZero=FALSE)
   .foceiControl <- nlmixr2est::foceiControl(rxControl=.rxControl,
@@ -108,13 +118,24 @@ as.nlmixr2.monolix2rx <- function(x, ..., table=nlmixr2est::tableControl(), rxCo
     env$nobs2<- x$dfObs
     # Run before converting to nonmemControl
     .objf <- .ui$monolixObjf
+    # Start from the imported etas; otherwise nlmixr2est may start from
+    # the etas of the last nlmixr2() fit (like the one run for the FOCEi
+    # objective of an earlier import with tableControl(cwres=TRUE))
+    env$etaMat <- .importEtaMat(.ui, env$etaObf, length(unique(env$dataSav$ID)))
     # When running the focei problem to create the nlmixr object, you also need a
     #  foceiControl object
     .monolix2rxToFoceiControl(env, x, TRUE)
+    .ofvType <- env$ofvType
     .ret <- nlmixr2est::nlmixr2CreateOutputFromUi(env$ui, data=env$origData,
                                                   control=env$control, table=env$table,
                                                   env=env, est="monolix2rx")
     if (inherits(.ret, "nlmixr2FitData")) {
+      # nlmixr2CreateOutputFromUi() may add its own objective (like FOCEi
+      # with tableControl(cwres=TRUE)) and make it the one in use; keep
+      # the imported Monolix objective in use, like the fit itself (#94)
+      if (any(row.names(.ret$objDf) == .ofvType)) {
+        nlmixr2est::setOfv(.ret, .ofvType)
+      }
       assign("monolixControl", list(ci=ci), .ret$env)
       .msg <- .monolixMergePredsAndCalcRelativeErr(.ret)
       rm("monolixControl", envir=.ret$env)

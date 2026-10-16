@@ -3,7 +3,7 @@
 #' @param nm Name of the compartment
 #' @param ui rxode2 ui to query against
 #' @param error Should this error if not found (if `FALSE` return `NA_integer`)
-#' @return compartment number (or possibily NA)
+#' @return compartment number (or possibly NA)
 #' @author Bill Denney and Matthew L. Fidler
 #' @noRd
 .rxGetCmtNumber <- function(nm, ui, error=TRUE) {
@@ -48,7 +48,7 @@
 }
 #' Is a variable known to be non-zero
 #'
-#' @param variable Varible name to check
+#' @param variable Variable name to check
 #' @param ui rxode2 ui
 #' @return logical to say if the variable is known to be non-zero
 #' @author Matthew L. Fidler
@@ -87,6 +87,8 @@
   # should protect zeros if requested, not in an if/else block
   # and if the variable is known to be something non-zero
   if (!rxode2::rxGetControl(ui, "protectZeros", getOption("babelmixr2.protectZeros", TRUE))) return(FALSE)
+  # NONMEM's $ABBR PROTECT protects the control stream instead
+  if (.nonmemProtect(ui)) return(FALSE)
   if (rxode2::rxGetControl(ui, ".ifelse", getOption("babelmixr2.ifelse", FALSE))) return(FALSE)
   if (.rxIsKnownNonZeroVariable(variable, ui)) return(FALSE)
   return(TRUE)
@@ -95,7 +97,7 @@
 
 #' @import nlmixr2data
 #' @import nlmixr2plot
-#' @importFrom stats predict logLik na.fail pchisq approxfun cov cov2cor dlnorm median na.omit qchisq qnorm
+#' @importFrom stats predict logLik na.fail pchisq approxfun cov cov2cor dlnorm median na.omit qchisq qnorm as.formula sigma vcov
 #' @noRd
 .genHardReExport <- function(fun) { # nocov start
   message("Writing hard reexport: ", fun)
@@ -141,6 +143,33 @@
   ret
 } # nocov end
 
+#' Spell an imported name so `@importFrom` survives roxygen2's merged form
+#'
+#' roxygen2 (>= 8.1) collapses every `@importFrom <pkg>` block for a package
+#' into one multi-name `importFrom(<pkg>, a, b, c)` directive.  R's
+#' `parseNamespaceFile()` reads that directive by dropping the first two
+#' elements and calling `as.character()` on what is left -- which makes the
+#' first name the call head and everything after it an argument.  A
+#' backtick-quoted non-syntactic name deparses back to plain text in the head
+#' position but keeps its backticks everywhere else, so
+#' `importFrom(rxode2, .minfo, `ini<-`)` asks rxode2 for an object literally
+#' named "`ini<-`".  That is a hard error in `importIntoEnv()`, so the *entire*
+#' directive fails and none of the package's imports land -- which in turn
+#' hides the imported generics from roxygen2's own S3 detection.
+#'
+#' Double quotes deparse cleanly in every position, so use them instead.
+#'
+#' @param fun name as it appears in the `pkg::name` reexport
+#' @return `fun`, with any backtick quoting swapped for double quoting
+#' @noRd
+.importName <- function(fun) { # nocov start
+  if (grepl("^`.*`$", fun)) {
+    paste0("\"", substr(fun, 2L, nchar(fun) - 1L), "\"")
+  } else {
+    fun
+  }
+} # nocov end
+
 .genSoftReExport <- function(fun, alias=NULL) { # nocov start
   message("Writing soft reexport: ", fun)
   .newFun <- strsplit(fun, "::")[[1]]
@@ -152,7 +181,7 @@
     .aliasText <- paste0("#' @rdname ", .fun)
   }
   paste(
-    c(paste("#' @importFrom", .pkg, .fun),
+    c(paste("#' @importFrom", .pkg, .importName(.fun)),
       .aliasText,
       "#' @export",
       fun

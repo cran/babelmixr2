@@ -166,20 +166,16 @@ in the babelmixr2 dataset (when \code{NULL})}
 
 \item{rxControl}{`rxode2` ODE solving options during fitting, created with `rxControl()`}
 
-\item{sigdig}{Optimization significant digits. This controls:
-
-\itemize{
-
- \item The tolerance of the inner and outer optimization is \code{10^-sigdig}
-
- \item The tolerance of the ODE solvers is
- \code{0.5*10^(-sigdig-2)}; For the sensitivity equations and
- steady-state solutions the default is \code{0.5*10^(-sigdig-1.5)}
- (sensitivity changes only applicable for liblsoda)
-
- \item The tolerance of the boundary check is \code{5 * 10 ^ (-sigdig + 1)}
-
-}}
+\item{sigdig}{Significant digits used to derive the ODE solver
+tolerances when \code{rxControl} is not supplied.  The tolerances are
+fixed here rather than taken from \code{rxode2::rxControl(sigdig=)} so
+they do not change with the rxode2 version: \code{atol}/\code{rtol} are
+\code{0.5*10^(-sigdig-2)}, the sensitivity tolerances are
+\code{0.5*10^(-sigdig-1.5)}, the steady-state tolerances are
+\code{0.5*10^(-sigdig)} and the steady-state sensitivity tolerances
+are \code{0.5*10^(-sigdig+0.625)}.  PopED computes the FIM by finite
+differences (see \code{hm1} and \code{hm2}), so the ODE solve must be much
+more accurate than those step sizes.}
 
 \item{important}{character vector of important parameters or NULL
 for default.  This is used with Ds-optimality}
@@ -603,6 +599,14 @@ popedControl object
 }
 \description{
 Control for a PopED design task
+}
+\references{
+Fidler ML, Denney W, Harrold J, Hooijmaijers R,
+Papathanasiou T, Schoemaker R, Taubert M, Trame M, Wilkins J
+(2024). babelmixr2 and PopED: Quick Conversion of NONMEM, Monolix
+and nlmixr2/rxode2 Models to PopED Optimal Design Analysis.
+American Conference on Pharmacometrics (ACoP) 2024.
+\doi{10.70534/XUMG6226}
 }
 \author{
 Matthew L. Fidler
